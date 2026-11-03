@@ -105,6 +105,7 @@ const figlio = {
   boss: false, counts: true, fake: false, onlyInMirror: false, ghost: false,
   twitch: 0.5, rot: 0.5, tear: 0.6, breathe: 1, selfLit: 0, glow: 0, blood: 0x7a0608, score: 1,
   frames: 1, fps: 8,               // sprite a più frame affiancati in orizzontale
+  hitbox: 'mask',                  // 'mask' = colpisci solo la figura; 'rect' = tutto il rettangolo (per sprite sottili)
   onSpawn(m, ctx) {}, update(m, ctx, dt) {}, onHit(m, shot, ctx) { return shot.dmg; }, onDeath(m, ctx, shot) {}, onAttack(m, ctx) {},
   projectile: { speed: 7, dmg: 8, color: 0xb02010, size: 0.14 }, fireEvery: 2.2, // per behavior 'ranged'
   attackEvery: 0.9, fixed: false,  // fixed: true = non scala con la difficoltà
