@@ -51,7 +51,7 @@ export default {
     const ground = ctx.art.wall([0.25, 0.86, 0.45, 0.13], { dark: 0.1 });
     const barkTex = ctx.art.wall([0.84, 0.15, 0.13, 0.55], { dark: 0 });
     const glowMat = (map, k) => new THREE.MeshStandardMaterial({ map, emissive: 0xffffff, emissiveMap: map, emissiveIntensity: k, roughness: 0.95 });
-    ctx.map.build({ grid, textures: { floor: glowMat(ground, 0.12) }, height: 8, ceiling: false });
+    ctx.map.build({ grid, textures: { floor: glowMat(ground, 0.12) }, height: 8, ceiling: false, floorRepeat: 0.35 });
 
     // trees: thin dark trunks like the ones behind Death, more crowded at the edges
     const W = N * ctx.CELL;
