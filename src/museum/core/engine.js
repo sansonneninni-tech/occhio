@@ -441,7 +441,7 @@ export function createEngine(canvas, hooks = {}) {
     const hl = Math.hypot(dir.x, dir.z) || 1e-6;
     let wallT = map.rayWall(ray.origin.x, ray.origin.z, dir.x, dir.z, 80) / hl;
     if (dir.y < 0) wallT = Math.min(wallT, -ray.origin.y / dir.y);
-    if (dir.y > 0 && map.wallHeight) wallT = Math.min(wallT, (map.wallHeight - ray.origin.y) / dir.y);
+    if (dir.y > 0 && map.wallHeight && map.hasCeiling) wallT = Math.min(wallT, (map.wallHeight - ray.origin.y) / dir.y);
     let best = null;
     for (const m of ctx._monsters) {
       if (m.dying || m.def.hittable === false) continue;
@@ -457,7 +457,7 @@ export function createEngine(canvas, hooks = {}) {
       const sx = m.view.facing.scale.x || 1;
       const u = lx / sx + 0.5, v = ly;
       if (u < 0 || u > 1 || v < 0 || v > 1) continue;
-      if (m.view.mask) { const frames = m.def.frames || 1; if (frames === 1 && !m.view.mask[(63 - Math.floor(v * 63)) * 64 + Math.floor(u * 63)]) continue; }
+      if (m.view.mask && m.def.hitbox !== 'rect') { const frames = m.def.frames || 1; if (frames === 1 && !m.view.mask[(63 - Math.floor(v * 63)) * 64 + Math.floor(u * 63)]) continue; }
       let zone = null;
       for (const z of m.def.zones || []) if (u - 0.5 >= z.x[0] && u - 0.5 <= z.x[1] && v >= z.y[0] && v <= z.y[1]) { zone = z; break; }
       best = { monster: m, zone: zone?.name ?? null, point: hit, dist: t, u, v, dmg: gun.dmg * (zone?.mul ?? 1) };
