@@ -9,7 +9,7 @@ export const FX_DEFAULTS = {
   keepRed: 0.6,      // lets reds (blood, flesh) survive the mono
   contrast: 0.55,    // S-curve strength
   exposure: 1.2,     // multiplier (0.5..2)
-  grain: 0.4,
+  grain: 0.4,        // the shader keeps it fine and soft: 1 is still readable
   scratches: 0.45,
   dust: 0.5,
   flicker: 0.35,
@@ -65,25 +65,27 @@ void main(){
   // stone crust
   if (stone > 0.0) { float s = noise(vUv * res / 6.0) * 0.5 + noise(vUv * res / 23.0) * 0.5; vec3 g = vec3(dot(m, vec3(0.33)) * 0.7 + s * 0.25); m = mix(m, g, stone); }
   // flicker
-  m *= 1.0 - flicker * 0.18 * h1(fr * 3.1);
+  m *= 1.0 - flicker * 0.08 * h1(fr * 3.1);
   // scratches: thin vertical lines that live a few frames
   for (int k = 0; k < 3; k++) {
     float fk = float(k);
     float seed = floor(time * 6.0) + fk * 17.0;
-    if (h1(seed) < scratches * 0.7) {
+    if (h1(seed) < scratches * 0.35) {
       float x = h1(seed + 3.0);
       float w = 0.0008 + h1(seed + 5.0) * 0.0015;
       float line = smoothstep(w, 0.0, abs(vUv.x - x - sin(vUv.y * 9.0 + seed) * 0.002));
-      m = mix(m, vec3(h1(seed + 9.0) > 0.5 ? 0.95 : 0.02), line * 0.7);
+      m = mix(m, vec3(h1(seed + 9.0) > 0.5 ? 0.95 : 0.02), line * 0.4);
     }
   }
   // dust and hairs
   float d = h2(floor(vUv * res / 2.0) + fr);
-  if (d > 1.0 - dust * 0.0005) m = vec3(h1(fr + d) > 0.4 ? 0.0 : 1.0);
+  if (d > 1.0 - dust * 0.00015) m = vec3(h1(fr + d) > 0.4 ? 0.0 : 1.0);
   // grain
-  float gr = h2(floor(vUv * res) + vec2(fr * 17.0, fr * 31.0)) - 0.5;
+  // fine and soft: two hashes averaged, low amplitude, almost nothing in the blacks
+  vec2 gp = floor(vUv * res);
+  float gr = (h2(gp + vec2(fr * 17.0, fr * 31.0)) + h2(gp + vec2(fr * 5.0 + 0.5, fr * 11.0 + 0.5))) * 0.5 - 0.5;
   float lum = dot(m, vec3(0.333));
-  m += gr * grain * (0.08 + lum * 0.45);
+  m += gr * grain * (0.02 + lum * 0.14);
   // vignette and tunnel vision
   vec2 q = vUv - 0.5; q.x *= res.x / res.y;
   float r = length(q);
