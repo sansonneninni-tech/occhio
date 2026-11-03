@@ -106,7 +106,7 @@ function museumHero() {
   const g = MUSEUM;
   const best = store.best(g.id);
   let prog = { max: 0, restored: [] };
-  try { prog = { ...prog, ...JSON.parse(localStorage.getItem('occhio:museum') || '{}') }; } catch {}
+  try { prog = { ...prog, ...JSON.parse(localStorage.getItem('occhio:museo2') || '{}') }; } catch {}
   const eyes = Array.from({ length: 7 }, (_, i) => h('i', { style: { left: `${8 + i * 13 + (i % 2) * 4}%`, top: `${20 + ((i * 37) % 55)}%`, animationDelay: `${(i * 0.7) % 4}s` } }));
   return h('a', { class: 'mz-hero', href: `#/play/${g.id}` },
     h('div', { class: 'mz-hero-eyes', 'aria-hidden': 'true' }, eyes),
@@ -117,7 +117,7 @@ function museumHero() {
       h('p', {}, t(g.tagline)),
       h('div', { class: 'mz-hero-foot' },
         h('span', { class: 'mz-hero-cta' }, t('mzEnter'), h('span', { html: '&rarr;' })),
-        h('span', { class: 'mz-hero-stat' }, h('b', {}, `${prog.restored.length}/40`), ' ', t('mzHalls')),
+        h('span', { class: 'mz-hero-stat' }, h('b', {}, `${prog.restored.length}/15`), ' ', t('mzHalls')),
         best ? h('span', { class: 'mz-hero-stat' }, h('b', {}, best.score.toLocaleString()), ' ', t('best')) : null),
       h('em', { class: 'mz-hero-warn' }, t('mzWarn'))));
 }
