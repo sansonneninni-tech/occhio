@@ -32,11 +32,12 @@ const GRID = [
 
 // where the figures are in the panel (0..1 of the painting). Kept together so they are easy to retouch.
 const CUT = {
-  sick: { rect: [0.0, 0.7, 0.3, 0.3], key: { dark: 0.1 } },       // the sick man with the swollen belly, bottom left
-  bird: { rect: [0.36, 0.3, 0.3, 0.22], key: { dark: 0.12 } },     // the beaked demon tearing at the saint
-  beast: { rect: [0.05, 0.38, 0.32, 0.3], key: { dark: 0.12 } },   // the hairy beast with the club
-  bat: { rect: [0.6, 0.45, 0.35, 0.25], key: { dark: 0.12 } },     // the winged demon
-  wall: [0.55, 0.05, 0.4, 0.2], floor: [0.3, 0.88, 0.35, 0.1],
+  sick: { rect: [0.0, 0.775, 0.29, 0.225] },                                     // the sick man with the swollen belly, bottom left
+  bird: { rect: [0.7, 0.5, 0.3, 0.34], poly: [[0.25, 0.25], [0.45, 0.1], [0.75, 0.13], [0.97, 0.35], [1, 0.72], [0.85, 1], [0.45, 1], [0.28, 0.7]] }, // the bird demon, right
+  beast: { rect: [0.52, 0.42, 0.42, 0.25] },                                     // the orange demon raising its club
+  bat: { rect: [0.0, 0.4, 0.27, 0.2] },                                          // the horned demon, left
+  toad: { rect: [0.4, 0.85, 0.25, 0.15] },                                       // the scaly dragon-toad at the saint's feet
+  wall: [0.0, 0.26, 0.3, 0.14], floor: [0.62, 0.88, 0.3, 0.1],
 };
 
 export default {
@@ -86,10 +87,10 @@ export default {
         T: { tau: true },
         b: { bed: true },
       },
-      textures: { wall: lift(CUT.wall, 0.9), floor: lift(CUT.floor, 0.8), ceil: stone, wing: lift([0.0, 0.0, 1, 1], 1.0, 512), painting: ctx.art.texture },
+      textures: { wall: lift(CUT.wall, 1.5), floor: lift(CUT.floor, 1.2), ceil: stone, wing: lift([0.0, 0.0, 1, 1], 1.0, 512), painting: ctx.art.texture },
       height: 5,
     });
-    ctx.light({ ambient: 0.35, color: 0xb8c8a0, ground: 0x101008, lantern: { angle: 0.5, range: 16, intensity: 42, penumbra: 0.5, color: 0xf0f0c8 }, fog: { color: 0x080a04, near: 3, far: 24 } });
+    ctx.light({ ambient: 0.7, color: 0xb8c8a0, ground: 0x101008, lantern: { angle: 0.5, range: 16, intensity: 42, penumbra: 0.5, color: 0xf0f0c8 }, fog: { color: 0x080a04, near: 3, far: 24 } });
 
     // straw beds with the sick lying on them (a lump under the sheet that breathes)
     const straw = new THREE.MeshStandardMaterial({ color: 0x6a5a30, roughness: 1 });
@@ -113,11 +114,14 @@ export default {
     });
 
     // ---------- monsters cut from the panel ----------
-    const C = (k, o = {}) => ctx.art.cutout({ ...CUT[k], rot: 0.35, ...o });
+    // the figures, cut along their outline from the panel (files made from the same reproduction)
+    const imgs = {};
+    await Promise.all(['sick', 'bird', 'beast', 'bat', 'toad'].map(async (k) => { imgs[k] = await ctx.art.load(`/museo/opere/04-grunewald-${k}.webp`); }));
+    const C = (k) => (imgs[k].isPlaceholder ? ctx.art.cutout({ ...CUT[k], rot: 0.3 }) : imgs[k]);
     const sick = {
       name: T('Il malato', 'The sick man'),
       sprite: C('sick'), height: 1.7, hp: 3, speed: 1.6, dmg: 8, radius: 0.45,
-      behavior: 'chase', twitch: 0.4, rot: 0.6, tear: 0.4, breathe: 1.8, blood: 0x8a9a30, selfLit: 0.1,
+      behavior: 'chase', twitch: 0.4, rot: 0.25, tear: 0.4, breathe: 1.8, blood: 0x8a9a30, selfLit: 0.1,
       parts: [{ type: 'sack', at: [0, 0.8, 0.2], size: 0.35, color: 0x6a5a30 }],
       // it bursts in a cloud of pus
       onDeath(m, c) {
@@ -128,25 +132,31 @@ export default {
     const bird = {
       name: T('Il demone becco', 'The beaked demon'),
       sprite: C('bird'), height: 1.5, hp: 2, speed: 3.2, dmg: 7, radius: 0.4,
-      behavior: 'fly', twitch: 0.9, rot: 0.3, tear: 0.6, blood: 0x4a3020, selfLit: 0.08,
+      behavior: 'fly', twitch: 0.9, rot: 0.15, tear: 0.6, blood: 0x4a3020, selfLit: 0.08,
     };
     const beast = {
       name: T('La bestia col bastone', 'The beast with the club'),
       sprite: C('beast'), height: 2.1, hp: 5, speed: 2.4, dmg: 16, radius: 0.5,
-      behavior: 'charge', twitch: 0.6, rot: 0.4, tear: 0.5, blood: 0x5a2010, selfLit: 0.08,
+      behavior: 'charge', twitch: 0.6, rot: 0.15, tear: 0.5, blood: 0x5a2010, selfLit: 0.08,
       parts: [{ type: 'spikes', n: 7, at: [0, 1.7, -0.1], color: 0x2a2010 }],
     };
     const bat = {
-      name: T('Il demone pipistrello', 'The bat demon'),
+      name: T('Il demone cornuto', 'The horned demon'),
       sprite: C('bat'), height: 1.6, lift: 0.8, hp: 3, speed: 2.4, dmg: 6, radius: 0.45,
       behavior: 'ranged', fireEvery: 2.4, projectile: { speed: 7, dmg: 7, color: 0x9aaa30, size: 0.16 },
-      twitch: 0.7, rot: 0.4, tear: 0.6, blood: 0x6a7a20, selfLit: 0.08,
+      twitch: 0.7, rot: 0.15, tear: 0.6, blood: 0x6a7a20, selfLit: 0.08,
     };
-    ctx.data.defs = { sick, bird, beast, bat };
+    const toad = {
+      name: T('Il drago rospo', 'The toad dragon'),
+      sprite: C('toad'), height: 0.9, hp: 2, speed: 3.4, dmg: 6, radius: 0.4,
+      behavior: 'crawl', twitch: 0.8, rot: 0.15, tear: 0.2, breathe: 1.2, blood: 0x4a4a20, selfLit: 0.1,
+      parts: [{ type: 'legs', n: 6, len: 0.5, at: [0, 0.25, 0], color: 0x3a3018 }],
+    };
+    ctx.data.defs = { sick, bird, beast, bat, toad };
     const W = [
-      [{ def: sick, w: 3 }, { def: bird, w: 2 }],
+      [{ def: sick, w: 3 }, { def: bird, w: 2 }, { def: toad, w: 2 }],
       [{ def: sick, w: 3 }, { def: bird, w: 2 }, { def: beast, w: 1 }, { def: bat, w: 1 }],
-      [{ def: sick, w: 2 }, { def: bird, w: 2 }, { def: beast, w: 2 }, { def: bat, w: 2 }],
+      [{ def: sick, w: 2 }, { def: bird, w: 2 }, { def: beast, w: 2 }, { def: bat, w: 2 }, { def: toad, w: 2 }],
     ];
     ctx.data.waves = W;
     ctx.data.thresholds = [10, 24];
@@ -179,7 +189,7 @@ export default {
       d.fakeT = 2.2;
       const alive = ctx.monsters.list.filter((m) => m.fake && !m.dying).length;
       if (alive < Math.round(inf * 8)) {
-        const kinds = [d.defs.bird, d.defs.beast, d.defs.sick, d.defs.bat];
+        const kinds = [d.defs.bird, d.defs.beast, d.defs.sick, d.defs.bat, d.defs.toad];
         const pos = ctx.map.freeAround(p.pos.x, p.pos.z, 5, 12, 1)[0];
         if (pos) ctx.spawn(kinds[Math.floor(Math.random() * kinds.length)], pos, { fake: true });
       }
