@@ -45,7 +45,7 @@ function entry() {
     h('div', { class: 'entry-center' },
       h('h1', { class: 'mega' }, ...'OCCHIO'.split('').map((c, i) => h('span', { style: { '--i': i } }, c))),
       h('p', { class: 'entry-title' }, t('enterTitle')),
-      h('p', { class: 'entry-sub' }, t('enterSub')),
+      h('p', { class: 'entry-sub' }, t('enterSub', { n: GAMES.length })),
       form
     ),
     marquee()
@@ -61,7 +61,7 @@ function marquee() {
 
 function dashboard() {
   const { sum, played } = store.totals();
-  const cats = ['all', 'colore', 'design', '3d', 'arte', 'folle'];
+  const cats = ['all', 'folle', 'colore', 'design', '3d', 'arte'];
   const grid = h('div', { class: 'grid' });
   const tabs = h('div', { class: 'tabs', role: 'tablist' }, cats.map((c) => {
     const n = c === 'all' ? GAMES.length : GAMES.filter((g) => g.cat === c).length;
@@ -125,7 +125,7 @@ function museumHero() {
 function card(g, idx) {
   const cat = CATS[g.cat];
   const best = store.best(g.id);
-  return h('a', { class: 'card', href: `#/play/${g.id}`, style: { '--cat': cat.color, '--cat-ink': cat.ink } },
+  return h('a', { class: g.cat === 'folle' ? 'card card--folle' : 'card', href: `#/play/${g.id}`, style: { '--cat': cat.color, '--cat-ink': cat.ink } },
     h('div', { class: 'card-thumb', html: g.thumb ? g.thumb() : '' }),
     h('div', { class: 'card-body' },
       h('div', { class: 'card-meta' }, h('span', {}, String(idx + 1).padStart(2, '0')), h('span', {}, t(cat.label))),

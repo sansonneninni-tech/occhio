@@ -22,6 +22,10 @@ import collage from './collage.js';
 import graffiti from './graffiti.js';
 import kaleido from './kaleido.js';
 import inkScroll from './ink-scroll.js';
+import vortice from './vortice.js';
+import brodo from './brodo.js';
+import driftAcido from './drift-acido.js';
+import loopInfinito from './loop-infinito.js';
 import opRider from './op-rider.js';
 import iperspazio from './iperspazio.js';
 import popupBrutale from './popup-brutale.js';
@@ -33,6 +37,7 @@ export const GAMES = [
   neon, patternDj, typeStorm, bauhausTower,
   prismRunner, lightPainting, lathe,
   collage, graffiti, kaleido, inkScroll,
+  vortice, brodo, driftAcido, loopInfinito,
   opRider, iperspazio, popupBrutale, oscillon,
 ];
 

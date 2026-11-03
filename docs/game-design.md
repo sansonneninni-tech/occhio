@@ -74,7 +74,7 @@ Nuova regola, sopra tutte le altre:
 
 - **R0. Il gameplay genera l'opera.** Ogni partita deve divertire e lasciare un'opera da scaricare (quadro, stampa, poster, vaso 3D, mandala...). Più giochi bene, più l'opera è bella.
 
-## 4. Giochi attuali (15 + il museo)
+## 4. Giochi attuali (15 + i Folli + il museo)
 
 | Gioco | Si gioca | Ti porti a casa |
 |---|---|---|
@@ -93,6 +93,19 @@ Nuova regola, sopra tutte le altre:
 | Writer Notturno | tag col tuo nome evitando la torcia | muro dipinto |
 | Caleido Blaster | difendi il centro, colpi a specchio x8 | mandala |
 | Inchiostro Vivo | pennello lungo un rotolo | rotolo dipinto |
+
+### I Folli (categoria `folle`, colore acido #C6FF00)
+
+Giochi con una grafica estrema e d'avanguardia: ognuno usa una tecnica visiva diversa e la trasforma in gameplay.
+
+| Gioco | Tecnica visiva | Si gioca | Ti porti a casa |
+|---|---|---|---|
+| Vortice | psichedelia anni 60 (spirali logaritmiche, anelli liquidi) | anelli che si stringono, giri intorno al centro e passi nei varchi | poster da concerto col tuo nome che si scioglie |
+| Brodo Primordiale | reazione-diffusione Gray-Scott in WebGL | semini vita chimica che cresce da sola, schiacci i fagi, conquisti superficie | PNG del pattern vivo |
+| Drift Acido | pavimento che si scioglie, sgommate al neon | drift tra le porte, punti che si incassano quando raddrizzi | pittura a sgommate |
+| Loop Infinito | feedback video in WebGL (zoom, rotazione, hue shift) | serpente che mangia occhi, le curve fanno girare il tunnel | fotogrammi scattati + ultimo fotogramma |
+
+Test con le regole: tutti passano R0, R1, R3, R6 (60–70 s), R7, R10 (dito: tieni premuto o punta), R11. R8: Drift Acido (rischio del drift in corso), Brodo (inchiostro limitato), Vortice (passare rasente vale doppio), Loop (catena di occhi veloci, occhio d'oro). Luci lampeggianti segnalate nelle istruzioni; con "riduci movimento" gli effetti più forti si spengono.
 
 ## 5. Il Museo Maledetto (il gioco grande)
 
