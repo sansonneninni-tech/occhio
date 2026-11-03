@@ -409,7 +409,8 @@ export default {
 
     const nextEvent = () => {
       if (!bag.length) bag = shuffle(EVENTS.map((_, i) => i));
-      cur = EVENTS[bag.pop()]();
+      const forced = window.__occhioFluxEvent; // test hook: force one event
+      cur = EVENTS[forced != null ? forced : bag.pop()]();
       cur.setup?.(A.w, A.h);
       n++;
       const lvl = Math.floor((n - 1) / 5);
@@ -553,10 +554,10 @@ export default {
       g.fillStyle = PAPER; g.font = `150px ${TYPE}`; g.fillText('FLUXKIT', 40, 160);
       g.fillStyle = PINK; g.font = `30px ${TYPE}`;
       g.fillText(`${api.t({ it: 'PARTITURE ESEGUITE DA', en: 'SCORES PERFORMED BY' })} ${(store.name || 'ANON').toUpperCase()}`, 44, 210);
-      const cols = 4, gap = 14, cw = (1080 - 80 - gap * (cols - 1)) / cols;
-      const items = log.slice(0, 16);
+      const items = log.slice(-16);
+      const cols = items.length <= 4 ? 2 : items.length <= 9 ? 3 : 4, gap = 18, cw = (1080 - 80 - gap * (cols - 1)) / cols;
       const rows = Math.ceil(items.length / cols) || 1;
-      const ch = Math.min((1350 - 230 - 120 - gap * (rows - 1)) / rows, cw * 1.15);
+      const ch = Math.min((1350 - 260 - 90 - gap * (rows - 1)) / rows, cw * 1.6);
       items.forEach((l, i) => {
         const x = 40 + (i % cols) * (cw + gap), y = 260 + Math.floor(i / cols) * (ch + gap);
         g.save(); g.translate(x + cw / 2, y + ch / 2); g.rotate(((i * 53) % 9 - 4) * 0.008); g.translate(-cw / 2, -ch / 2);
@@ -564,7 +565,7 @@ export default {
         const ih = ch - 64, ratio = l.c.width / l.c.height;
         let iw = cw - 16, ih2 = iw / ratio; if (ih2 > ih) { ih2 = ih; iw = ih * ratio; }
         g.drawImage(l.c, (cw - iw) / 2, 8, iw, ih2);
-        g.fillStyle = INK; g.font = `16px ${TYPE}`;
+        g.fillStyle = INK; g.font = `${cols === 2 ? 24 : 16}px ${TYPE}`;
         wrapText(g, `${String(l.n).padStart(2, '0')}. ${l.title}`, 8, ch - 38, cw - 16, 18);
         g.strokeStyle = l.ok ? INK : PINK; g.lineWidth = 3; g.font = `22px ${TYPE}`;
         g.save(); g.translate(cw - 70, 40); g.rotate(-0.25); g.strokeRect(-8, -24, 86, 34); g.fillStyle = l.ok ? INK : PINK; g.fillText(l.ok ? api.t({ it: 'FATTO', en: 'DONE' }) : 'NO.', 0, 0); g.restore();

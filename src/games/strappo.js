@@ -341,7 +341,7 @@ export default {
       g.fillStyle = '#F3EFE6'; g.fillRect(0, 0, c.width, c.height);
       for (let k = L; k >= 0; k--) g.drawImage(layers[k].c, 0, 0);
       g.scale(S, S);
-      g.fillStyle = '#0E0E10'; g.font = '700 14px "JetBrains Mono", monospace'; g.textBaseline = 'middle';
+      g.fillStyle = '#0E0E10'; g.font = `700 ${Math.min(14, W / 52)}px "JetBrains Mono", monospace`; g.textBaseline = 'middle';
       g.fillText(`${(store.name || '—').toUpperCase()} — ${api.t({ it: 'Strappo', en: 'Rip Off' })}, ${new Date().getFullYear()}. ${api.t({ it: 'Décollage, manifesti lacerati su muro', en: 'Décollage, torn posters on wall' })}. ${found} ★`, 16, H + 35);
       return c;
     }
