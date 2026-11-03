@@ -21,6 +21,11 @@ import collage from './collage.js';
 import graffiti from './graffiti.js';
 import kaleido from './kaleido.js';
 import inkScroll from './ink-scroll.js';
+import zangTumb from './zang-tumb.js';
+import cuneoRosso from './cuneo-rosso.js';
+import karawane from './karawane.js';
+import ballettoTriadico from './balletto-triadico.js';
+import grigliaSvizzera from './griglia-svizzera.js';
 import museum from '../museum/index.js';
 
 export const GAMES = [
@@ -28,6 +33,8 @@ export const GAMES = [
   neon, patternDj, typeStorm, bauhausTower,
   prismRunner, lightPainting, lathe,
   collage, graffiti, kaleido, inkScroll,
+  // Avant-garde (group A)
+  zangTumb, cuneoRosso, karawane, ballettoTriadico, grigliaSvizzera,
 ];
 
 // The big one: shown as a hero above the grid, not counted among the mini games.

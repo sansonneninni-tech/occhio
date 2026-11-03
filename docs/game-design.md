@@ -103,3 +103,13 @@ Nuova regola, sopra tutte le altre:
 - Regole applicate: R0 (galleria dei quadri restaurati), R4 (sangue, urla, sussurri, vibrazione), R5 (flow con curva di difficoltà), R7 (punti per anima, bonus vita e mira, classifica locale), R10 (joystick, trascinamento e tasti grandi su telefono).
 - Le opere nel gioco sono omaggi procedurali, non riproduzioni.
 - Doppio controllo: test automatici su tutte le 40 sale (caricamento, IA, abilità, completamento, morte, input da tastiera, mouse e touch, telefono verticale e orizzontale).
+
+## 6. Avanguardie storiche (gruppo A)
+
+| Gioco | Movimento | Si gioca | Ti porti a casa |
+|---|---|---|---|
+| Zang Tumb Tuum | Futurismo (Marinetti, Balla) | bolide che accelera, prendi onomatopee, eviti colonne e busti | tavola parolibera PNG |
+| Cuneo Rosso | Costruttivismo (El Lissitzky) | lanci cunei rossi che trapassano cerchi bianchi, catene = combo | manifesto agitprop PNG |
+| Karawane | Dada (Hugo Ball) | componi parole sonore toccando le sillabe giuste | poesia dada PNG |
+| Balletto Triadico | Bauhaus (Schlemmer, Kandinsky) | giri il costume per prendere triangoli, quadrati e cerchi col colore giusto | figurino PNG |
+| Griglia Svizzera | Stile svizzero (Müller-Brockmann) | linea ad angolo retto che mangia moduli rossi, precisione del percorso = punti | poster svizzero PNG |
