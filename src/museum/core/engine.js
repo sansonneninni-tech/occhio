@@ -288,7 +288,7 @@ export function createEngine(canvas, hooks = {}) {
     H('onHud', {
       hp: Math.max(0, Math.round(p.hp)), maxHp: p.maxHp, ammo: gun.ammo, max: gun.chambers, reloading: gun.reloadT > 0,
       alive: ctx.monsters.alive, kills: S.kills,
-      goal: ctx._goal || (ctx._goalKills ? { label: ctx.t({ it: 'anime da rimandare', en: 'souls to send back' }), value: Math.max(0, ctx._goalKills - S.kills) } : null),
+      goal: ctx._goal || (ctx._goalKills ? { label: ctx.t({ it: 'mostri da abbattere', en: 'monsters left to kill' }), value: Math.max(0, ctx._goalKills - S.kills) } : null),
       boss: b && b.m && !b.m.dead ? { name: b.name, v: clamp(b.m.hp / b.m.maxHp, 0, 1) } : null,
       bars: Object.entries(ctx._bars).map(([id, v]) => ({ id, ...v })),
       rear: !!ctx.view.rear,
@@ -392,6 +392,24 @@ export function createEngine(canvas, hooks = {}) {
   }
 
   // ---------- player ----------
+  // Danno continuo (zone dps): ignora e non rinnova l'invulnerabilità, tonfo al massimo ogni 0.5 s.
+  let dotT = 0, dotAcc = 0;
+  function hurtDot(v) {
+    const p = ctx.player;
+    if (S.dead || S.done) return;
+    let dmg = v;
+    if (level?.onHurt) { const r = level.onHurt(ctx, dmg, null); if (typeof r === 'number') dmg = r; }
+    if (dmg <= 0) return;
+    p.hp -= dmg; dotAcc += dmg;
+    ctx.fx.hurt = Math.min(1, Math.max(ctx.fx.hurt || 0, 0.25));
+    if (S.time - dotT > 0.5 || S.time < dotT) {
+      dotT = S.time;
+      H('onEvent', 'hurt', { dmg: dotAcc, ang: null, dot: true });
+      audio.thud(); if (p.hp < 35) audio.heart();
+      dotAcc = 0; hud();
+    }
+    if (p.hp <= 0) die();
+  }
   function hurtPlayer(v, from) {
     const p = ctx.player;
     if (S.dead || S.done || p.invuln > 0) return;
@@ -441,7 +459,7 @@ export function createEngine(canvas, hooks = {}) {
     const hl = Math.hypot(dir.x, dir.z) || 1e-6;
     let wallT = map.rayWall(ray.origin.x, ray.origin.z, dir.x, dir.z, 80) / hl;
     if (dir.y < 0) wallT = Math.min(wallT, -ray.origin.y / dir.y);
-    if (dir.y > 0 && map.wallHeight) wallT = Math.min(wallT, (map.wallHeight - ray.origin.y) / dir.y);
+    if (dir.y > 0 && map.wallHeight && map.hasCeiling) wallT = Math.min(wallT, (map.wallHeight - ray.origin.y) / dir.y);
     let best = null;
     for (const m of ctx._monsters) {
       if (m.dying || m.def.hittable === false) continue;
@@ -457,7 +475,7 @@ export function createEngine(canvas, hooks = {}) {
       const sx = m.view.facing.scale.x || 1;
       const u = lx / sx + 0.5, v = ly;
       if (u < 0 || u > 1 || v < 0 || v > 1) continue;
-      if (m.view.mask) { const frames = m.def.frames || 1; if (frames === 1 && !m.view.mask[(63 - Math.floor(v * 63)) * 64 + Math.floor(u * 63)]) continue; }
+      if (m.view.mask && m.def.hitbox !== 'rect') { const frames = m.def.frames || 1; if (frames === 1 && !m.view.mask[(63 - Math.floor(v * 63)) * 64 + Math.floor(u * 63)]) continue; }
       let zone = null;
       for (const z of m.def.zones || []) if (u - 0.5 >= z.x[0] && u - 0.5 <= z.x[1] && v >= z.y[0] && v <= z.y[1]) { zone = z; break; }
       best = { monster: m, zone: zone?.name ?? null, point: hit, dist: t, u, v, dmg: gun.dmg * (zone?.mul ?? 1) };
@@ -501,7 +519,7 @@ export function createEngine(canvas, hooks = {}) {
     if (Math.abs(nz - (p.pos.z + p.vel.z * dt)) > 1e-4) p.vel.z *= 0.2;
     p.pos.x = nx; p.pos.z = nz;
     p.moving = clamp(Math.hypot(p.vel.x, p.vel.z) / Math.max(1, p.speed), 0, 1);
-    if (zone.dps) hurtPlayer(zone.dps * dt, null);
+    if (zone.dps) hurtDot(zone.dps * dt);
     p.invuln = Math.max(0, p.invuln - dt);
     // gun
     gun.cd = Math.max(0, gun.cd - dt);
