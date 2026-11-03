@@ -587,3 +587,12 @@ a { color: inherit; }
 .mz-card--loading { width: auto; text-align: center; }
 .mz-tr[hidden] { display: none; }
 @media (max-width: 760px) { .mz-bars { top: calc(150px + var(--rear-off, 0px)); left: 14px; transform: none; width: 46%; } .mz-xbar small { text-align: left; } .mz-act-hint { display: none; } }
+
+/* ---------- Folli: shared bits ---------- */
+.f-meter { display: inline-flex; align-items: center; gap: 10px; font: 600 12px/1 var(--mono, 'JetBrains Mono', monospace); text-transform: uppercase; letter-spacing: .06em; }
+.f-meter-bar { position: relative; display: block; width: min(320px, 52vw); height: 14px; border: var(--line); border-radius: 99px; overflow: hidden; background: var(--paper); }
+.f-meter-bar i { position: absolute; inset: 0; background: linear-gradient(90deg, #FF2BD6, #FFE629, #C6FF00); transform-origin: left center; }
+.f-shot { min-height: 44px; }
+.card--folle .card-thumb svg { animation: folle-hue 6s linear infinite; }
+@keyframes folle-hue { to { filter: hue-rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .card--folle .card-thumb svg { animation: none; } }

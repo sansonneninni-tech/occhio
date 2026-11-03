@@ -41,7 +41,7 @@ export function loop(fn) {
   let raf = 0, last = performance.now(), running = true;
   const step = (now) => {
     if (!running) return;
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
     last = now;
     fn(dt, now / 1000);
     raf = requestAnimationFrame(step);

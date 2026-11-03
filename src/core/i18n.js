@@ -24,7 +24,7 @@ document.documentElement.lang = lang;
 
 export const UI = {
   enterTitle: { it: 'Allena l’occhio.', en: 'Train your eye.' },
-  enterSub: { it: '15 giochi d’azione che ti lasciano un’opera, più un museo maledetto da 15 quadri. Scrivi un nome e sfida i record.', en: '15 action games that leave you an artwork, plus a cursed museum of 15 paintings. Pick a name and chase the records.' },
+  enterSub: { it: '{n} giochi d’azione che ti lasciano un’opera, più un museo maledetto da 15 quadri. Scrivi un nome e sfida i record.', en: '{n} action games that leave you an artwork, plus a cursed museum of 15 paintings. Pick a name and chase the records.' },
   namePh: { it: 'Il tuo nome', en: 'Your name' },
   play: { it: 'Gioca', en: 'Play' },
   hello: { it: 'Ciao, {name}', en: 'Hi, {name}' },
@@ -34,6 +34,7 @@ export const UI = {
   design: { it: 'Design', en: 'Design' },
   '3d': { it: '3D', en: '3D' },
   arte: { it: 'Arte', en: 'Art' },
+  folle: { it: 'Folli', en: 'Wild' },
   museo: { it: 'Museo', en: 'Museum' },
   mzKicker: { it: 'Il gioco grande · 15 quadri, 15 incubi', en: 'The big game · 15 paintings, 15 nightmares' },
   mzEnter: { it: 'Entra nel museo', en: 'Enter the museum' },
