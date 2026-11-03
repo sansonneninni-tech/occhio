@@ -438,7 +438,7 @@ a { color: inherit; }
 .mz-tr { position: absolute; right: 14px; top: 10px; text-align: right; display: flex; flex-direction: column; }
 .mz-tr small { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
 .mz-tr b { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: .9; color: #ff5a4a; text-shadow: 0 0 16px rgba(255, 40, 40, .55); font-variant-numeric: tabular-nums; }
-.mz-boss { position: absolute; left: 50%; top: 14px; width: min(46%, 380px); transform: translateX(-50%); text-align: center; }
+.mz-boss { position: absolute; left: 50%; top: calc(14px + var(--rear-off, 0px)); width: min(46%, 380px); transform: translateX(-50%); text-align: center; }
 .mz-boss[hidden] { display: none; }
 .mz-boss small::before { content: 'BOSS'; font-size: 10px; letter-spacing: .3em; color: #ff5a4a; }
 .mz-bar { height: 8px; border: 1px solid rgba(232, 220, 192, .5); background: rgba(0, 0, 0, .5); overflow: hidden; }
@@ -571,7 +571,7 @@ a { color: inherit; }
 .mz-lives-row small, .mz-rule small, .mz-discovery small { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #7d7058; }
 .mz-lives-row .mz-lives { margin: 0; }
 .mz-lives-row .mz-lives i { width: 16px; height: 24px; }
-.mz-bars { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); display: grid; gap: 6px; width: min(42%, 320px); }
+.mz-bars { position: absolute; left: 50%; top: calc(52px + var(--rear-off, 0px)); transform: translateX(-50%); display: grid; gap: 6px; width: min(42%, 320px); }
 .mz-xbar small { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .8; text-align: center; margin-bottom: 3px; }
 .mz-xbar .mz-bar i { background: var(--c); }
 .mz-rule { margin: 6px 0 14px; padding: 12px 14px; border: 1px solid #4a3424; border-left: 4px solid var(--mz-accent, #ff5a4a); background: #160c08; }
@@ -586,4 +586,33 @@ a { color: inherit; }
 .mz-act-hint[hidden] { display: none; }
 .mz-card--loading { width: auto; text-align: center; }
 .mz-tr[hidden] { display: none; }
-@media (max-width: 760px) { .mz-bars { top: 150px; left: 14px; transform: none; width: 46%; } .mz-xbar small { text-align: left; } .mz-act-hint { display: none; } }
+@media (max-width: 760px) { .mz-bars { top: calc(150px + var(--rear-off, 0px)); left: 14px; transform: none; width: 46%; } .mz-xbar small { text-align: left; } .mz-act-hint { display: none; } }
+
+/* museo: obiettivo sempre leggibile */
+.mz-tr { align-items: flex-end; gap: 8px; max-width: min(34%, 320px); }
+.mz-count { display: flex; flex-direction: column; align-items: flex-end; }
+.mz-count[hidden] { display: none; }
+.mz-obj { pointer-events: auto; display: block; text-align: right; font: inherit; color: #f4ecd8; background: rgba(8, 4, 3, .62); border: 1px solid rgba(244, 236, 216, .22); border-right: 3px solid var(--mz-accent, #ff5a4a); padding: 7px 10px; cursor: pointer; }
+.mz-obj[hidden] { display: none; }
+.mz-obj small { display: block; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--mz-accent, #ff5a4a); opacity: 1; font-weight: 700; }
+.mz-obj p { margin: 1px 0 0; font-size: 13px; line-height: 1.3; }
+.mz-obj .mz-obj-r { margin-top: 6px; }
+.mz-obj p + small + p, .mz-obj p:last-child { opacity: .85; }
+.mz-banner-goal { display: block; margin: 16px auto 0; max-width: 560px; padding: 10px 16px; font-family: var(--fell); font-weight: 400; font-size: clamp(18px, 2.4vw, 26px); line-height: 1.25; background: rgba(0, 0, 0, .6); border-left: 4px solid var(--mz-accent, #ff5a4a); }
+.mz-banner-goal small { display: block; font-family: inherit; font-size: 11px; letter-spacing: .3em; margin-bottom: 4px; }
+.mz-todo { margin: 8px 0 14px; display: grid; gap: 8px; }
+.mz-todo .mz-rule { margin: 0; }
+.mz-todo-goal { padding: 12px 14px; background: #2a0f0a; border: 1px solid #6a2a1c; border-left: 4px solid var(--mz-accent, #ff5a4a); }
+.mz-todo-goal small { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mz-accent, #ff5a4a); font-weight: 700; }
+.mz-todo-goal p { margin: 4px 0 0 !important; color: #fff6e4 !important; font-size: 18px; font-weight: 600; line-height: 1.3; }
+.mz-keys { margin: 0 !important; font-family: var(--mono); font-size: 11px !important; letter-spacing: .02em; color: #b8a888 !important; line-height: 1.5; }
+@media (max-width: 760px) {
+  .mz-tr { max-width: 46%; }
+  .mz-obj { padding: 5px 8px; }
+  .mz-obj p { font-size: 11px; }
+  .mz-todo-goal p { font-size: 16px; }
+}
+/* on touch the pause button sits next to the lives, so it never covers the objective */
+.mz.is-touch .mz-pause-btn { right: auto; left: 72px; top: 80px; width: 32px; height: 32px; }
+@media (max-width: 760px) { .mz-tl { max-width: 50%; } }
+@media (max-width: 760px) { .mz-banner { top: 58%; } .mz-banner b { font-size: 64px; } .mz-banner-goal { margin-top: 10px; } }
