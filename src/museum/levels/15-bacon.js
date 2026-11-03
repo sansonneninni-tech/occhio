@@ -20,7 +20,7 @@ export default {
   intro: T('L’ultima sala. Un Papa chiuso in una gabbia di linee gialle, dietro tende di pennellate che colano. Urla da settant’anni e nessuno ha mai sentito cosa.', 'The last hall. A Pope shut in a cage of yellow lines, behind curtains of dripping brushstrokes. He has been screaming for seventy years and no one has ever heard what.'),
   rule: T('Il Papa si ferisce solo nella bocca, e solo mentre urla. Ma se guardi l’urlo la vista ti si sbava e la vita brucia: dietro le tende sei al sicuro. La gabbia si stringe.', 'The Pope can be hurt only in the mouth, and only while he screams. But if you look at the scream your sight smears and your life burns: behind the curtains you are safe. The cage closes in.'),
   ruleShort: T('colpisci la bocca mentre urla', 'hit the mouth while he screams'),
-  goal: T('Fai tacere il Papa. È l’ultimo quadro.', 'Silence the Pope. It is the last painting.'),
+  goal: T('Quando il Papa urla, colpiscilo nella bocca. Resta dentro la gabbia gialla.', 'When the Pope screams, shoot him in the mouth. Stay inside the yellow cage.'),
   paint: '#7a3aa8',
   accent: '#f0c020',
   fx: { mono: 0.15, tint: [1.0, 0.95, 0.88], keepRed: 0.5, contrast: 0.6, exposure: 1.2, grain: 0.4, scratches: 0.25, dust: 0.3, flicker: 0.2, weave: 0.2, smear: 0.45, vignette: 0.7 },
@@ -72,20 +72,30 @@ export default {
     ctx.light({ ambient: 0.85, color: 0xf0e0c0, ground: 0x2a1a30, lantern: { angle: 0.7, range: 26, intensity: 70, color: 0xfff0d8 }, fog: { color: 0x0a0608, density: 0.035 }, sky: 0x0a0608 });
 
     const center = ctx.map.find('throne')[0];
-    // the yellow cage: an outline of bars, scaled each frame as it closes in
+    // the yellow cage: bars of paint that close in; each bar keeps its thickness while the cage shrinks
     const yellow = new THREE.MeshBasicMaterial({ color: 0xf0c020, transparent: true, opacity: 0.85 });
-    const cage = new THREE.Group();
-    const bar = (x, y, z, sx, sy, sz) => { const b = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), yellow); b.position.set(x, y, z); cage.add(b); };
-    // unit cube outline (half size 1), bars thin
-    const t = 0.03;
-    for (const y of [0.02, 5.2]) { bar(0, y, -1, 2, t * 4, t); bar(0, y, 1, 2, t * 4, t); bar(-1, y, 0, t, t * 4, 2); bar(1, y, 0, t, t * 4, 2); }
-    for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) bar(x, 2.6, z, t, 5.2, t);
-    // the floor lines that run towards the throne, as in the painting
-    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; const b = new THREE.Mesh(new THREE.BoxGeometry(t, 0.02, 1), yellow); b.position.set(Math.cos(a) * 0.5, 0.02, Math.sin(a) * 0.5); b.rotation.y = -a + Math.PI / 2; cage.add(b); }
-    cage.position.set(center.x, 0, center.z);
-    ctx.add(cage);
+    const unit = new THREE.BoxGeometry(1, 1, 1);
+    const makeCage = (R, H, th) => {
+      const g = new THREE.Group(); const bars = [];
+      const add = (k) => { const m = new THREE.Mesh(unit, yellow); g.add(m); bars.push({ m, k }); };
+      for (const y of [0, 1]) for (const side of ['n', 's', 'e', 'w']) add({ y, side });
+      for (const cx of [-1, 1]) for (const cz of [-1, 1]) add({ post: true, cx, cz });
+      g.userData.layout = (R) => {
+        for (const { m, k } of bars) {
+          if (k.post) { m.scale.set(th, H, th); m.position.set(k.cx * R, H / 2, k.cz * R); continue; }
+          const y = k.y ? H : 0.03, horiz = k.side === 'n' || k.side === 's';
+          m.scale.set(horiz ? 2 * R : th, th * 0.6, horiz ? th : 2 * R);
+          m.position.set(k.side === 'e' ? R : k.side === 'w' ? -R : 0, y, k.side === 'n' ? -R : k.side === 's' ? R : 0);
+        }
+      };
+      g.userData.layout(R);
+      g.position.set(center.x, 0, center.z);
+      ctx.add(g);
+      return g;
+    };
+    const cage = makeCage(23, 5.4, 0.09);
     // the throne cage, fixed, small, around the Pope
-    const inner = cage.clone(); inner.scale.set(1.8, 0.75, 1.8); ctx.add(inner);
+    makeCage(2.4, 3.6, 0.06);
 
     // the empty gilded frame of the real Velázquez, hidden in a corner
     const fp = ctx.map.find('frame')[0];
@@ -103,12 +113,12 @@ export default {
     const glasses = pinceNez();
 
     const D = ctx.data = {
-      center, cage, R: 17, Rmin: 6.5, phase: 1, pope: null, scream: 0, windup: 0, nextScream: 4, looked: 0,
+      center, cage, R: 23, Rmin: 7, phase: 1, pope: null, scream: 0, windup: 0, nextScream: 4, looked: 0,
       defs: {}, frameP: fp, frameSeen: false, end: 0, curtHint: 0,
     };
     const smear = {
       name: T('La sbavatura', 'The smear'),
-      sprite: smearSprite, height: 2.1, hp: 1, speed: 2.6, dmg: 3, attackEvery: 1.1,
+      sprite: smearSprite, height: 2.1, hp: 0.68, speed: 2.6, dmg: 3, attackEvery: 1.1,
       // you see it clearly only when it stops
       behavior(m, c, dt) {
         m.state.t = (m.state.t ?? Math.random()) + dt;
@@ -120,17 +130,17 @@ export default {
     };
     const robe = {
       name: T('Il drappo bianco', 'The white robe'),
-      sprite: robeSprite, height: 2.3, hp: 1.5, speed: 1.8, dmg: 4, attackEvery: 1.2, behavior: 'charge',
+      sprite: robeSprite, height: 2.3, hp: 1, speed: 1.8, dmg: 4, attackEvery: 1.2, behavior: 'charge',
       twitch: 0.5, rot: 0.4, breathe: 1, blood: 0xe8e0d0,
     };
     const lenses = {
       name: T('Gli occhiali rotti', 'The broken glasses'),
-      sprite: glasses, height: 0.55, lift: 1.2, hp: 0.6, speed: 3.4, dmg: 2.5, attackEvery: 0.9, behavior: 'fly', radius: 0.25,
+      sprite: glasses, height: 0.55, lift: 1.2, hp: 0.34, speed: 3.4, dmg: 2.5, attackEvery: 0.9, behavior: 'fly', radius: 0.25,
       twitch: 0.2, rot: 0, selfLit: 0.6, glow: 0.3, blood: 0xd0e0f0,
     };
     const popeDef = {
       name: T('Innocenzo X', 'Innocent X'),
-      sprite: popeImg, height: 3.8, hp: 30, speed: 1.1, dmg: 8, reach: 2.4, radius: 1.1, boss: true, fixed: true, attackEvery: 1.4,
+      sprite: popeImg, height: 3.8, hp: 36, speed: 1.1, dmg: 8, reach: 2.4, radius: 1.1, boss: true, fixed: true, attackEvery: 1.4,
       zones: [{ name: 'bocca', x: [-0.14, 0.06], y: [0.74, 0.9], mul: 1.6 }],
       behavior(m, c, dt) { if (m.state.walk) c.BEHAVIORS.chase(m, c, dt); else c.monsters.melee(m, dt); },
       onHit: mouthOnly,
@@ -139,7 +149,7 @@ export default {
     };
     const mouthDef = {
       name: T('La bocca', 'The mouth'),
-      sprite: mouthSprite, height: 2.2, lift: 1.4, hp: 10, speed: 1.6, dmg: 6, reach: 1.8, radius: 0.8, boss: true, fixed: true,
+      sprite: mouthSprite, height: 2.2, lift: 1.4, hp: 12, speed: 1.6, dmg: 6, reach: 1.8, radius: 0.8, boss: true, fixed: true,
       zones: [{ name: 'bocca', x: [-0.25, 0.25], y: [0.15, 0.65], mul: 1.6 }],
       behavior: 'fly', onHit: mouthOnly,
       parts: [{ type: 'teeth', at: [0, 0.42], r: 0.16, n: 16 }, { type: 'strands', n: 10, len: 1.4, at: [0, 0.4, 0], color: 0x3a1a4a }],
@@ -149,7 +159,7 @@ export default {
     D.pope = ctx.spawn(popeDef, center);
 
     const inCage = (c) => {
-      const a = Math.random() * Math.PI * 2, r = Math.max(4, D.R - 1.5 - Math.random() * 3);
+      const a = Math.random() * Math.PI * 2, r = Math.max(4, Math.min(19, D.R - 1.5) - Math.random() * 3);
       const x = D.center.x + Math.cos(a) * r, z = D.center.z + Math.sin(a) * r;
       const cell = c.map.cellAt(x, z);
       if (cell?.solid || c.player.pos.distanceTo(new THREE.Vector3(x, 0, z)) < 6) return null;
@@ -177,10 +187,11 @@ export default {
     const boss = D.pope && !D.pope.dead ? D.pope : null;
     const pp = ctx.player.pos;
 
+    if (boss) ctx.hud.goal(T('vita del Papa', 'the Pope’s life'), `${Math.ceil((boss.hp / boss.maxHp) * 100)}% · ${D.phase}/3`);
     // the cage closes in
-    D.R = Math.max(D.Rmin, D.R - dt * 0.07 * (D.phase === 3 ? 1.6 : 1));
-    D.cage.scale.set(D.R, 1, D.R);
-    ctx.hud.bar('cage', { value: (D.R - D.Rmin) / (17 - D.Rmin) });
+    D.R = Math.max(D.Rmin, D.R - dt * 0.09 * (D.phase === 3 ? 1.6 : 1));
+    D.cage.userData.layout(D.R);
+    ctx.hud.bar('cage', { value: (D.R - D.Rmin) / (23 - D.Rmin) });
     const dx = pp.x - D.center.x, dz = pp.z - D.center.z;
     // the cage is square: outside it the yellow lines burn
     if (Math.max(Math.abs(dx), Math.abs(dz)) > D.R) {

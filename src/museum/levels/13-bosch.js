@@ -25,7 +25,7 @@ export default {
   intro: T('L’ala destra del trittico. Una città brucia, un lago è gelato, e laggiù un’orchestra di strumenti grandi come case suona per i dannati. Non smette mai.', 'The right wing of the triptych. A city burns, a lake is frozen, and down there an orchestra of instruments as big as houses plays for the damned. It never stops.'),
   rule: T('Qui tutto va a tempo. Spara sul colpo di tamburo: il colpo fa il triplo. Fuori tempo fa un terzo. I mostri avanzano solo sul battito.', 'Everything here keeps time. Shoot on the drumbeat: the shot does triple damage. Off the beat it does a third. Monsters lurch forward only on the beat.'),
   ruleShort: T('spara sul colpo di tamburo', 'shoot on the drumbeat'),
-  goal: T('Scendi all’orchestra e abbatti il Principe dell’Inferno.', 'Go down to the orchestra and bring down the Prince of Hell.'),
+  goal: T('Uccidi 16 dannati. Poi 8 colpi a tempo sulla partitura sotto l’arpa. Poi il Principe.', 'Kill 16 damned. Then 8 shots on the beat at the score under the harp. Then the Prince.'),
   paint: '#c84a14',
   accent: '#ff7a2a',
   player: { hp: 140 },
@@ -138,7 +138,7 @@ export default {
 
     // fires: flickering lights in the city and in the orchestra
     const fires = [];
-    const firePts = [ctx.map.toWorld(6, 3), ctx.map.toWorld(14, 7), ctx.map.toWorld(22, 5), ctx.map.toWorld(3, 9), ...ctx.map.find('fire')];
+    const firePts = [ctx.map.toWorld(6, 3), ctx.map.toWorld(20, 7), ...ctx.map.find('fire')];
     for (const p of firePts) {
       const l = new THREE.PointLight(0xff5a14, 14, 14, 1.6); l.position.set(p.x, 2.2, p.z); ctx.add(l); fires.push(l);
     }
@@ -228,7 +228,7 @@ export default {
       onHit(m, shot, c) {
         if (!D.unlocked) {
           c.particles.burst(shot.point, 8, 0x6a8ac8, 2, 0.4);
-          if (D.scoreHint++ % 3 === 0) c.hud.say(T('Non sente niente. Cerca la musica, sotto il liuto.', 'He feels nothing. Find the music, under the lute.'), 2400);
+          if (D.scoreHint++ % 3 === 0) c.hud.say(T('Non sente niente. Cerca la partitura sotto l’arpa.', 'He feels nothing. Find the score under the harp.'), 2400);
           return 0;
         }
         return shot.dmg;
@@ -255,7 +255,7 @@ export default {
     ctx.pickup(ctx.map.toWorld(23, 30), { kind: 'heal', amount: 45 });
 
     ctx.hud.bar('beat', { label: T('tamburo', 'drum'), value: 1, color: '#ff7a2a' });
-    ctx.hud.goal(T('dannati prima della porta', 'damned before the gate'), 16);
+    ctx.hud.goal(T('dannati per aprire l’orchestra', 'damned to open the orchestra'), 16);
     ctx.after(1.2, () => ctx.hud.say(T('Senti il tamburo? Spara sul colpo.', 'Hear the drum? Shoot on the beat.'), 3000));
     ctx.audio.muffle(0);
 
@@ -297,10 +297,11 @@ export default {
 
     // the gate to the orchestra
     if (!D.gateOpen) {
-      ctx.hud.goal(T('dannati prima della porta', 'damned before the gate'), Math.max(0, 16 - ctx.kills));
+      ctx.hud.goal(T('dannati per aprire l’orchestra', 'damned to open the orchestra'), Math.max(0, 16 - ctx.kills));
       if (ctx.kills >= 16) openGate(ctx, D);
     } else if (D.prince && !D.prince.dead) {
-      ctx.hud.goal(T('il Principe', 'the Prince'), D.unlocked ? T('sente', 'feels') : T('non sente', 'feels nothing'));
+      if (!D.unlocked) ctx.hud.goal(T('note sulla partitura', 'notes on the score'), 8 - D.notes);
+      else ctx.hud.goal(T('vita del Principe', 'the Prince’s life'), Math.ceil((D.prince.hp / D.prince.maxHp) * 100) + '%');
     }
 
     // the Prince swallows the damned near him to heal, and spits them at you on the beat
@@ -375,7 +376,7 @@ function openGate(ctx, D) {
   D.gateOpen = true;
   for (const g of ctx.map.find('gate')) ctx.map.setSolid(g.cx, g.cy, false);
   ctx.audio.toll(49);
-  ctx.hud.say(T('La porta dell’orchestra si apre. Il Principe ti aspetta sul trono.', 'The orchestra gate opens. The Prince waits on his throne.'), 3200);
+  ctx.hud.say(T('La porta dell’orchestra si apre. Il Principe non sente dolore: cerca la partitura sotto l’arpa.', 'The orchestra gate opens. The Prince feels no pain: find the score under the harp.'), 3600);
   const t = ctx.map.find('throne')[0];
   D.prince = ctx.spawn(D.defs.prince, t);
   D.waves.cfg.kinds = [{ def: D.defs.ears, w: 2 }, { def: D.defs.hare, w: 2 }, { def: D.defs.knight, w: 2 }, { def: D.defs.pig, w: 2 }];

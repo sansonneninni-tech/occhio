@@ -22,8 +22,8 @@ export default {
   credit: T('Riproduzione: pubblico dominio', 'Reproduction: public domain'),
   intro: T('La Quinta del Sordo, la casa di un vecchio pittore sordo fuori Madrid. Di notte un gigante gira per le stanze. Ha fame dei suoi figli. Qui non si sente niente.', 'The Quinta del Sordo, the house of an old deaf painter outside Madrid. At night a giant walks the rooms. He is hungry for his sons. Here you hear nothing.'),
   rule: T('Il tempo divora: la vita scende da sola e torna solo uccidendo. Saturno mangia i figli per guarire e non muore finché ne resta uno. Sparagli negli occhi per stordirlo.', 'Time devours: your life drains on its own and comes back only by killing. Saturn eats his sons to heal and cannot die while one is left. Shoot his eyes to stun him.'),
-  ruleShort: T('il tempo ti divora: uccidi per vivere', 'time devours you: kill to live'),
-  goal: T('Rimanda nel quadro tutti i figli, poi Saturno.', 'Send all the sons back into the painting, then Saturn.'),
+  ruleShort: T('uccidi per vivere · spara agli occhi di Saturno', 'kill to live · shoot Saturn in the eyes'),
+  goal: T('Uccidi i 26 figli prima che Saturno li mangi. Poi uccidi Saturno.', 'Kill the 26 sons before Saturn eats them. Then kill Saturn.'),
   paint: '#5a0a06',
   accent: '#c8402a',
   fx: { mono: 0.9, tint: [0.92, 0.84, 0.7], keepRed: 0.95, contrast: 0.6, exposure: 1.45, grain: 0.5, scratches: 0.6, dust: 0.7, flicker: 0.4, weave: 0.4, smear: 0.3, vignette: 0.9 },
@@ -121,13 +121,13 @@ export default {
     };
     D.defs = { son, crawler, saturn };
 
-    D.waves = ctx.spawner({ kinds: [{ def: son, w: 3 }, { def: crawler, w: 1 }], first: 3, every: 2.8, burst: 1, max: 5, total: SONS, min: 8 });
+    D.waves = ctx.spawner({ kinds: [{ def: son, w: 3 }, { def: crawler, w: 1 }], first: 3, every: 2.8, burst: 1, max: 4, total: SONS, min: 8 });
     D.saturn = ctx.spawn(saturn, ctx.map.find('saturn')[0]);
 
     ctx.pickup(ctx.map.toWorld(25, 2), { kind: 'heal', amount: 30 });
     ctx.pickup(ctx.map.toWorld(3, 12), { kind: 'heal', amount: 30 });
 
-    ctx.hud.goal(T('figli da rimandare', 'sons to send back'), SONS);
+    ctx.hud.goal(T('figli rimasti', 'sons left'), SONS);
     ctx.hud.bar('time', { label: T('il tempo ti mangia', 'time is eating you'), value: 1, color: '#c8402a' });
     // deafness: everything muffled, and a ringing that does not go away
     ctx.audio.muffle(0.93);
@@ -149,8 +149,11 @@ export default {
 
     const alive = ctx.monsters.list.filter((m) => !m.dying && m !== D.saturn && m.counts).length;
     D.sonsLeft = SONS - (D.waves.spawned - alive);
-    if (!vulnerable(ctx)) ctx.hud.goal(T('figli da rimandare', 'sons to send back'), Math.max(0, D.sonsLeft));
-    else if (!D.saidLast) { D.saidLast = true; ctx.hud.say(T('Nessun figlio è rimasto. Ora Saturno può morire.', 'No son is left. Now Saturn can die.'), 3200); ctx.hud.goal(T('Saturno', 'Saturn'), '!'); }
+    if (!vulnerable(ctx)) ctx.hud.goal(T('figli rimasti', 'sons left'), Math.max(0, D.sonsLeft));
+    else if (D.saturn && !D.saturn.dead) {
+      ctx.hud.goal(T('vita di Saturno', 'Saturn’s life'), Math.ceil((D.saturn.hp / D.saturn.maxHp) * 100) + '%');
+      if (!D.saidLast) { D.saidLast = true; ctx.hud.say(T('Nessun figlio è rimasto. Ora Saturno può morire.', 'No son is left. Now Saturn can die.'), 3200); }
+    }
   },
 
   onShot(ctx, shot) {
@@ -216,7 +219,7 @@ function saturnBrain(m, ctx, dt) {
   }
   if (seen || !prey) {
     m.anger = seen ? 1 : 0.3;
-    ctx.monsters.walkTo(m, pl, m.speed * (seen ? 1.35 : 0.9), dt);
+    ctx.monsters.walkTo(m, pl, m.speed * (seen ? 1.1 : 0.8), dt);
     ctx.monsters.melee(m, dt);
     if (seen && !s.roared) { s.roared = true; ctx.hud.whisper(T('ti ha visto', 'he has seen you')); ctx.view.shake = 0.3; }
     if (!seen) s.roared = false;
@@ -234,7 +237,9 @@ function saturnBrain(m, ctx, dt) {
     m.hp = Math.min(s.base * 1.6, m.hp + s.base * 0.08);
     m.maxHp = Math.max(m.maxHp, m.hp);
     s.chew = 1.8;
-    s.grow = Math.min(1.45, s.grow + 0.06);
+    // he grows: the hit box grows with the picture
+    const g2 = Math.min(1.45, s.grow + 0.06), k = g2 / s.grow;
+    s.grow = g2; m.view.height *= k; m.view.width *= k;
     m.view.root.scale.setScalar(s.grow);
     m.reach = 2.2 * s.grow;
     ctx.audio.flesh();
