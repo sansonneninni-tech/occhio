@@ -61,7 +61,7 @@ function marquee() {
 
 function dashboard() {
   const { sum, played } = store.totals();
-  const cats = ['all', 'colore', 'design', '3d', 'arte'];
+  const cats = ['all', 'colore', 'design', '3d', 'arte', 'folle'];
   const grid = h('div', { class: 'grid' });
   const tabs = h('div', { class: 'tabs', role: 'tablist' }, cats.map((c) => {
     const n = c === 'all' ? GAMES.length : GAMES.filter((g) => g.cat === c).length;
