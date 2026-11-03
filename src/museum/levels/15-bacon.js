@@ -118,7 +118,7 @@ export default {
     };
     const smear = {
       name: T('La sbavatura', 'The smear'),
-      sprite: smearSprite, height: 2.1, hp: 0.68, speed: 2.6, dmg: 3, attackEvery: 1.1,
+      sprite: smearSprite, height: 2.1, hp: 0.68, speed: 2.6, dmg: 2.2, attackEvery: 1.1,
       // you see it clearly only when it stops
       behavior(m, c, dt) {
         m.state.t = (m.state.t ?? Math.random()) + dt;
@@ -130,12 +130,12 @@ export default {
     };
     const robe = {
       name: T('Il drappo bianco', 'The white robe'),
-      sprite: robeSprite, height: 2.3, hp: 1, speed: 1.8, dmg: 4, attackEvery: 1.2, behavior: 'charge',
+      sprite: robeSprite, height: 2.3, hp: 1, speed: 1.8, dmg: 3, attackEvery: 1.2, behavior: 'charge',
       twitch: 0.5, rot: 0.4, breathe: 1, blood: 0xe8e0d0,
     };
     const lenses = {
       name: T('Gli occhiali rotti', 'The broken glasses'),
-      sprite: glasses, height: 0.55, lift: 1.2, hp: 0.34, speed: 3.4, dmg: 2.5, attackEvery: 0.9, behavior: 'fly', radius: 0.25,
+      sprite: glasses, height: 0.55, lift: 1.2, hp: 0.34, speed: 3.4, dmg: 1.1, attackEvery: 0.9, behavior: 'fly', radius: 0.25,
       twitch: 0.2, rot: 0, selfLit: 0.6, glow: 0.3, blood: 0xd0e0f0,
     };
     const popeDef = {
@@ -187,7 +187,7 @@ export default {
     const boss = D.pope && !D.pope.dead ? D.pope : null;
     const pp = ctx.player.pos;
 
-    if (boss) ctx.hud.goal(T('vita del Papa', 'the Pope’s life'), `${Math.ceil((boss.hp / boss.maxHp) * 100)}% · ${D.phase}/3`);
+    if (boss) ctx.hud.goal(T('fase del Papa', 'the Pope’s stage'), `${D.phase}/3`);
     // the cage closes in
     D.R = Math.max(D.Rmin, D.R - dt * 0.09 * (D.phase === 3 ? 1.6 : 1));
     D.cage.userData.layout(D.R);
@@ -195,7 +195,7 @@ export default {
     const dx = pp.x - D.center.x, dz = pp.z - D.center.z;
     // the cage is square: outside it the yellow lines burn
     if (Math.max(Math.abs(dx), Math.abs(dz)) > D.R) {
-      ctx.player.hurt(14 * dt, null);
+      burn(ctx, 14 * dt);
       ctx.fx.wobble = 0.5;
       if (!D.outHint) { D.outHint = true; ctx.hud.whisper(T('fuori dalla gabbia si brucia', 'outside the cage you burn')); }
     } else D.outHint = false;
@@ -207,8 +207,8 @@ export default {
         D.scream -= dt;
         const looking = ctx.player.sees(boss.pos) && ctx.player.isLookingAt(new ctx.THREE.Vector3(boss.pos.x, boss.lift + boss.view.height * 0.6 - 1, boss.pos.z), 0.88);
         const inSight = ctx.player.sees(boss.pos);
-        if (looking) { ctx.player.hurt(7 * dt, boss); D.looked = Math.min(1, D.looked + dt * 1.2); }
-        else if (inSight) ctx.player.hurt(2 * dt, boss);
+        if (looking) { burn(ctx, 7 * dt); D.looked = Math.min(1, D.looked + dt * 1.2); }
+        else if (inSight) burn(ctx, 2 * dt);
         boss.anger = 1;
         if (D.scream <= 0) { D.nextScream = every; boss.anger = 0; }
       } else if (D.windup > 0) {
@@ -270,6 +270,13 @@ export default {
 
   onHurt(ctx, dmg) { return dmg; },
 };
+
+// continuous damage (the scream, the burning cage): straight off the life, no flinch pause
+function burn(ctx, v) {
+  ctx.player.hp -= v;
+  ctx.fx.hurt = Math.min(0.6, (ctx.fx.hurt || 0) + v * 0.08);
+  if (ctx.player.hp <= 0) ctx.lose();
+}
 
 // the pince-nez of the nurse in Battleship Potemkin: two cracked lenses on a thin bridge
 function pinceNez() {

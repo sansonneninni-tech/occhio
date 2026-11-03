@@ -76,14 +76,14 @@ export default {
     const plaster = document.createElement('canvas'); plaster.width = 256; plaster.height = Math.round(256 * mh / mw);
     const pg = plaster.getContext('2d');
     pg.drawImage(ctx.art.crop([0.0, 0.0, 0.25, 0.25], 256), 0, 0, plaster.width, plaster.height);
-    pg.fillStyle = 'rgba(176,156,124,0.72)'; pg.fillRect(0, 0, plaster.width, plaster.height);
+    pg.fillStyle = 'rgba(62,52,40,0.78)'; pg.fillRect(0, 0, plaster.width, plaster.height);
     const plTex = ctx.art.tex(plaster);
-    const cover = new THREE.Mesh(new THREE.PlaneGeometry(mw, mh), new THREE.MeshStandardMaterial({ map: plTex, transparent: true, roughness: 1 }));
+    const cover = new THREE.Mesh(new THREE.PlaneGeometry(mw, mh), new THREE.MeshStandardMaterial({ map: plTex, transparent: true, roughness: 1, color: 0x5a5048 }));
     cover.position.set(mx, my, mz - 0.02); cover.rotation.y = Math.PI; ctx.add(cover);
-    const candle = new THREE.PointLight(0xffb060, 4, 7, 1.8); candle.position.set(mx, 1.2, mz - 1.2); ctx.add(candle);
+    const candle = new THREE.PointLight(0xffb060, 2, 6, 1.8); candle.position.set(mx, 1.2, mz - 1.2); ctx.add(candle);
 
     const D = ctx.data = {
-      drain: 1.7, sonsLeft: SONS, eaten: 0, saturn: null, mural: { x: mx, y: my, z: mz, w: mw, h: mh, g: pg, tex: plTex, c: plaster, hits: 0, done: false },
+      drain: 1.5, sonsLeft: SONS, eaten: 0, saturn: null, mural: { x: mx, y: my, z: mz, w: mw, h: mh, g: pg, tex: plTex, c: plaster, hits: 0, done: false },
       candle, ring: null, stunHint: 0, lastSeen: 0,
     };
 
@@ -189,7 +189,7 @@ export default {
       return;
     }
     // devouring keeps you alive
-    ctx.player.heal(9);
+    ctx.player.heal(11);
   },
 
   onHurt(ctx, dmg) { return dmg; },
