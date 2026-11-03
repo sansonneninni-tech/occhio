@@ -180,7 +180,7 @@ export function createEngine(canvas, opts = {}) {
     S.fogRGB = rgbOf(level.pal.fog); S.ceilRGB = rgbOf(level.pal.ceil); S.accent = rgbOf(level.pal.accent);
     S.fogK = 0.03 + x * 0.04;
     const gain = (arr, k) => arr.map((p) => 0xff000000 | (Math.min(255, (((p >> 16) & 255) * k) | 0) << 16) | (Math.min(255, (((p >> 8) & 255) * k) | 0) << 8) | Math.min(255, ((p & 255) * k) | 0));
-    S.tex = wallTextures(level, idx).map((t) => gain(t, 1.9));
+    S.tex = wallTextures(level, idx).map((t) => ({ T: t.T, d: gain(t.d, 1.9) }));
     S.floorT = gain(floorTexture(level, idx), 1.8);
     S.ceilT = S.floorT.map((p) => { const k = 0.55; const r = (((p & 255) * k + S.ceilRGB[0]) / 2) | 0, gg = ((((p >> 8) & 255) * k + S.ceilRGB[1]) / 2) | 0, b = ((((p >> 16) & 255) * k + S.ceilRGB[2]) / 2) | 0; return 0xff000000 | (b << 16) | (gg << 8) | r; });
     S.sprites = monsterSprites(level.monster, idx);
@@ -575,17 +575,18 @@ export function createEngine(canvas, opts = {}) {
       zbuf[x] = d;
       const lh = proj / d;
       let y0 = Math.floor(horizon - lh / 2), y1 = Math.floor(horizon + lh / 2);
-      const tex = S.tex[clamp(hit.cell - 1, 0, 2)];
-      let tx = (hit.wx * T) | 0;
-      if ((hit.side === 0 && hit.rdx > 0) || (hit.side === 1 && hit.rdy < 0)) tx = T - tx - 1;
+      if (x === W >> 1) { S.lookCell = hit.cell; S.lookDist = d; }
+      const tw = S.tex[clamp(hit.cell - 1, 0, 2)], tex = tw.d, TT = tw.T;
+      let tx = (hit.wx * TT) | 0;
+      if ((hit.side === 0 && hit.rdx > 0) || (hit.side === 1 && hit.rdy < 0)) tx = TT - tx - 1;
       const shadeK = hit.side ? 0.72 : 1;
       const f = (fogAt(d) * shadeK * 256) | 0, nf = 256 - (fogAt(d) * 256 | 0);
       const frr = fr * nf, fgg = fg * nf, fbb = fb * nf;
-      const step = T / lh;
+      const step = TT / lh;
       let tp = (Math.max(0, y0) - (horizon - lh / 2)) * step;
       const ys = Math.max(0, y0), ye = Math.min(H - 1, y1);
       for (let y = ys; y <= ye; y++) {
-        const c = tex[((tp | 0) & (T - 1)) * T + tx]; tp += step;
+        const c = tex[((tp | 0) & (TT - 1)) * TT + tx]; tp += step;
         buf[y * W + x] = 0xff000000 | ((((c >> 16) & 255) * f + fbb) >> 8 << 16) | ((((c >> 8) & 255) * f + fgg) >> 8 << 8) | (((c & 255) * f + frr) >> 8);
       }
     }

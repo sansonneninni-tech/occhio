@@ -1,3 +1,5 @@
+import { SIG } from './signatures.js';
+
 // Procedural art for the museum: painting homages, monster sprites, wall and floor textures.
 export function rng(seed) {
   let a = seed >>> 0;
@@ -36,7 +38,10 @@ export function paintingArt(level, idx, W = 320, H = 240) {
   const { pal, monster } = level;
   const bg = g.createLinearGradient(0, 0, 0, H);
   const m = level.motif;
-  if (m === 'hell') {
+  const sig = SIG[idx];
+  if (sig?.full) {
+    g.save(); g.scale(W / 320, H / 240); sig.full(g, r, level); g.restore();
+  } else if (m === 'hell') {
     bg.addColorStop(0, '#000'); bg.addColorStop(0.35, shade(pal.accent, 0.7)); bg.addColorStop(0.55, pal.wall2); bg.addColorStop(1, pal.floor);
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
     for (let i = 0; i < 14; i++) { g.fillStyle = hexA(pal.accent, 0.15 + r() * 0.3); g.beginPath(); g.ellipse(r() * W, H * 0.3 + r() * 30, 20 + r() * 50, 6 + r() * 14, 0, 0, TAU); g.fill(); }
@@ -96,6 +101,7 @@ export function paintingArt(level, idx, W = 320, H = 240) {
     const id = g.getImageData(W * 0.3, H * 0.2, W * 0.4, H * 0.6);
     for (let k = 0; k < 4; k++) g.putImageData(id, W * 0.3 + (r() - 0.5) * 10, H * 0.2 + k * 2);
   }
+  if (sig?.add) { g.save(); g.scale(W / 320, H / 240); sig.add(g, r, level); g.restore(); }
   // varnish: vignette, cracks, grain
   const vg = g.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, W * 0.75);
   vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.65)');
@@ -247,35 +253,44 @@ export function monsterSprites(mon, idx) {
 
 function toTex(c) { return new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer); }
 
-// Wall textures (64x64): 0 plain panel, 1 framed painting, 2 empty frame.
+// Wall textures: 0 plain panel (64px), 1 framed painting and 2 empty frame (128px, so the
+// painting stays readable up close). Each one is { T, d } with d a T*T pixel array.
 export function wallTextures(level, idx) {
-  const T = 64, r = rng(idx * 101 + 3);
-  const base = () => {
-    const c = cv(T, T), g = c.getContext('2d');
+  const r = rng(idx * 101 + 3);
+  const base = (T) => {
+    const c = cv(T, T), g = c.getContext('2d'), k = T / 64;
     g.fillStyle = level.pal.wall; g.fillRect(0, 0, T, T);
     // damask-like pattern
     g.fillStyle = level.pal.wall2;
-    for (let y = 0; y < T; y += 16) for (let x = (y / 16) % 2 ? 8 : 0; x < T; x += 16) { g.beginPath(); g.ellipse(x + 4, y + 8, 3, 5, 0, 0, TAU); g.fill(); }
-    g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 52, T, 12);
-    g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(0, 50, T, 2);
-    for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(0,0,0,${r() * 0.2})`; g.fillRect(r() * T, r() * T, 1, 1 + r() * 3); }
-    // stains
-    for (let i = 0; i < 3; i++) { g.fillStyle = 'rgba(30,0,0,.18)'; g.fillRect(r() * T, r() * 30, 2 + r() * 3, 10 + r() * 30); }
+    for (let y = 0; y < T; y += 16 * k) for (let x = (y / (16 * k)) % 2 ? 8 * k : 0; x < T; x += 16 * k) { g.beginPath(); g.ellipse(x + 4 * k, y + 8 * k, 3 * k, 5 * k, 0, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 52 * k, T, 12 * k);
+    g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(0, 50 * k, T, 2 * k);
+    for (let i = 0; i < 160 * k; i++) { g.fillStyle = `rgba(0,0,0,${r() * 0.2})`; g.fillRect(r() * T, r() * T, k, (1 + r() * 3) * k); }
+    for (let i = 0; i < 3; i++) { g.fillStyle = 'rgba(30,0,0,.18)'; g.fillRect(r() * T, r() * 30 * k, (2 + r() * 3) * k, (10 + r() * 30) * k); }
     return { c, g };
   };
-  const plain = base();
-  const framed = base();
-  const art = paintingArt(level, idx, 160, 120);
-  framed.g.fillStyle = '#5a4010'; framed.g.fillRect(8, 8, 48, 38);
-  framed.g.fillStyle = '#c8a040'; framed.g.fillRect(10, 10, 44, 34);
-  framed.g.drawImage(art, 13, 13, 38, 28);
-  framed.g.fillStyle = 'rgba(255,240,200,.1)'; framed.g.fillRect(13, 13, 38, 8);
-  const empty = base();
-  empty.g.fillStyle = '#5a4010'; empty.g.fillRect(8, 8, 48, 38);
-  empty.g.fillStyle = '#c8a040'; empty.g.fillRect(10, 10, 44, 34);
-  empty.g.fillStyle = '#050303'; empty.g.fillRect(13, 13, 38, 28);
-  empty.g.strokeStyle = 'rgba(200,0,0,.6)'; empty.g.lineWidth = 1; for (let i = 0; i < 6; i++) { empty.g.beginPath(); empty.g.moveTo(14 + r() * 36, 14 + r() * 26); empty.g.lineTo(14 + r() * 36, 14 + r() * 26); empty.g.stroke(); }
-  return [toTex(plain.c), toTex(framed.c), toTex(empty.c)];
+  // big gilt frame with a brass plaque under it
+  const frame = (g) => {
+    g.fillStyle = '#3a2808'; g.fillRect(8, 6, 112, 86);
+    g.fillStyle = '#c8a040'; g.fillRect(11, 9, 106, 80);
+    g.fillStyle = '#8a6a20'; g.fillRect(15, 13, 98, 72);
+    g.fillStyle = '#e8c860'; g.fillRect(11, 9, 106, 2);
+    g.fillStyle = '#2a1c08'; g.fillRect(46, 95, 36, 11);
+    g.fillStyle = '#d8b450'; g.fillRect(47, 96, 34, 9);
+    g.fillStyle = '#5a4010'; for (let i = 0; i < 3; i++) g.fillRect(51, 98 + i * 2.4, i === 0 ? 26 : 18 + i * 3, 1);
+  };
+  const plain = base(64);
+  const framed = base(128);
+  frame(framed.g);
+  framed.g.drawImage(paintingArt(level, idx, 320, 240), 17, 15, 94, 68);
+  // the engine brightens walls ~1.9x: pre-darken the canvas so its colours survive
+  framed.g.fillStyle = 'rgba(0,0,0,.4)'; framed.g.fillRect(17, 15, 94, 68);
+  framed.g.fillStyle = 'rgba(255,240,200,.08)'; framed.g.fillRect(17, 15, 94, 14);
+  const empty = base(128);
+  frame(empty.g);
+  empty.g.fillStyle = '#050303'; empty.g.fillRect(17, 15, 94, 68);
+  empty.g.strokeStyle = 'rgba(200,0,0,.6)'; empty.g.lineWidth = 1.5; for (let i = 0; i < 9; i++) { empty.g.beginPath(); empty.g.moveTo(19 + r() * 90, 17 + r() * 64); empty.g.lineTo(19 + r() * 90, 17 + r() * 64); empty.g.stroke(); }
+  return [{ T: 64, d: toTex(plain.c) }, { T: 128, d: toTex(framed.c) }, { T: 128, d: toTex(empty.c) }];
 }
 
 export function floorTexture(level, idx) {
