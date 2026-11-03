@@ -31,8 +31,8 @@ export default {
     'July 1816. The frigate Méduse runs aground off Africa. One hundred and forty-seven people on a raft of lashed beams, without water, for thirteen days.'),
   rule: T('La zattera si inclina verso il peso: dove si ammassano i naufraghi, scivoli verso il mare. La vita scende da sola per fame e sete; ti nutre solo quello che lasciano i morti. Le travi si staccano. Resisti finché all’orizzonte compare l’Argus, poi fai il segnale con l’azione.',
     'The raft tilts towards the weight: where the castaways crowd, you slide towards the sea. Your life drains on its own from hunger and thirst; only what the dead leave behind feeds you. The beams come loose. Hold on until the Argus appears on the horizon, then signal with the action.'),
-  ruleShort: T('tieniti in equilibrio, nutriti dei morti', 'keep your balance, feed on the dead'),
-  goal: T('Sopravvivi fino all’Argus e fagli il segnale.', 'Survive until the Argus and signal it.'),
+  ruleShort: T('stai al centro della zattera · raccogli i resti per non morire di fame', 'stay in the middle of the raft · pick up the remains or starve'),
+  goal: T('Abbatti 22 naufraghi finché appare l’Argus, poi tieni premuto SEGNALE.', 'Kill 22 castaways until the Argus appears, then hold SIGNAL.'),
   paint: '#8a5a2a',
   accent: '#e0a060',
   fx: { mono: 0.45, tint: [1.0, 0.86, 0.66], keepRed: 0.5, contrast: 0.75, exposure: 1.05, grain: 0.5, scratches: 0.35, dust: 0.45, flicker: 0.25, weave: 0.35, smear: 0.3, vignette: 0.8 },
@@ -157,7 +157,7 @@ export default {
     ctx.data.sea = ctx.spawner({ kinds: [{ def: DROWNED, w: 1 }], first: 1, every: 3.6, max: 3, where: () => far(edgeSea(), 4) });
     ctx.data.father = ctx.spawn(FATHER, ctx.map.toWorld(8, 7), { instant: true });
     ctx.action({ label: T('SEGNALE', 'SIGNAL') });
-    ctx.hud.goal(T('l’Argus all’orizzonte', 'the Argus on the horizon'), '…');
+    ctx.hud.goal(T('naufraghi da abbattere', 'castaways to kill'), 22);
     ctx.after(1, (c) => c.hud.say(T('La zattera pende dove pesano i corpi. Non scivolare in mare.', 'The raft leans where the bodies weigh. Do not slide into the sea.'), 3400));
   },
 
@@ -216,7 +216,8 @@ export default {
     // ---------- the Argus ----------
     if (d.phase === 0) {
       const need = 22;
-      ctx.hud.goal(T('naufraghi da rimandare', 'castaways to send back'), Math.max(0, need - ctx.kills));
+      if (ctx.kills < need) ctx.hud.goal(T('naufraghi da abbattere', 'castaways to kill'), need - ctx.kills);
+      else ctx.hud.goal(T('resisti: l’Argus arriva', 'hold on: the Argus is coming'), Math.ceil(45 - ctx.time) + ' s');
       if (ctx.kills >= need && ctx.time > 45) {
         d.phase = 1;
         ctx.audio.toll(52);

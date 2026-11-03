@@ -48,8 +48,8 @@ export default {
     '“Through me the way into the suffering city.” Three engraved plates, one below the other. You descend into Doré’s black and white: no gate opens again behind you.'),
   rule: T('Tre gironi, tre leggi. All’Acheronte le anime non finiscono: aprile un varco e abbatti Caronte. Nel sabbione piove fuoco: se ti fermi bruci, ripàrati sotto le rocce. Nel Cocito si scivola e le teste mordono da sotto il ghiaccio: sparare a terra lo spacca e le affoga, ma l’acqua gelida uccide anche te.',
     'Three circles, three laws. At the Acheron the souls never end: cut through them and bring down Charon. On the sand fire rains: stand still and you burn, shelter under the rocks. On Cocytus you slide and heads bite from under the ice: shooting the ice cracks it and drowns them, but the freezing water kills you too.'),
-  ruleShort: T('scendi: ogni girone ha la sua legge', 'descend: every circle has its law'),
-  goal: T('Attraversa i tre gironi fino al fondo del Cocito.', 'Cross the three circles to the bottom of Cocytus.'),
+  ruleShort: T('sotto il fuoco non stare fermo · spara al ghiaccio per romperlo', 'under the fire keep moving · shoot the ice to break it'),
+  goal: T('Abbatti Caronte, poi 16 dannati nel sabbione, poi 18 traditori nel ghiaccio, e raggiungi i due poeti.', 'Kill Charon, then 16 damned on the sand, then 18 traitors in the ice, and reach the two poets.'),
   paint: '#e8e4dc',
   accent: '#e8e0d0',
   fx: { mono: 1, tint: [0.96, 0.95, 0.92], keepRed: 0, contrast: 0.85, exposure: 1.2, grain: 0.35, scratches: 0.25, dust: 0.3, flicker: 0.2, weave: 0.15, smear: 0.2, vignette: 0.7 },
@@ -258,7 +258,7 @@ export default {
         for (const g of d.gates1) ctx.map.setSolid(g.cx, g.cy, false);
         ctx.audio.toll(44);
         ctx.hud.say(T('Caronte è caduto. La riva si apre verso il basso.', 'Charon has fallen. The shore opens downwards.'), 3000);
-        ctx.hud.goal(T('scendi', 'go down'), '↓');
+        ctx.hud.goal(T('scendi al girone dopo', 'go down to the next circle'), '↓');
       }
       if (row >= 15) {
         d.circle = 2;
@@ -287,7 +287,7 @@ export default {
     }
     if (d.circle === 2) {
       const left = Math.max(0, 16 - (ctx.kills - d.kill2));
-      ctx.hud.goal(T('dannati del sabbione', 'damned of the sand'), left);
+      ctx.hud.goal(T('dannati da abbattere', 'damned to kill'), left);
       const z = ctx.map.zoneAt(p.pos.x, p.pos.z);
       const speed = Math.hypot(p.vel.x, p.vel.z);
       const exposed = z === 'sabbia' || z === 'b';
@@ -331,7 +331,7 @@ export default {
         if (c.t <= 0) { c.open = false; c.n = 0; ctx.map.setZone(c.cx, c.cy, 'gelo'); ctx.remove(c.mesh); if (c.decal) { ctx.remove(c.decal); c.decal = null; } }
       }
       const left = Math.max(0, 18 - (ctx.kills - d.kill3));
-      if (left > 0) ctx.hud.goal(T('traditori nel ghiaccio', 'traitors in the ice'), left);
+      if (left > 0) ctx.hud.goal(T('traditori da abbattere', 'traitors to kill'), left);
       else if (!d.poets) {
         d.sp3.stop();
         for (const m of ctx.monsters.list.slice()) if (!m.dying && m.counts) ctx.monsters.kill(m);
@@ -340,7 +340,7 @@ export default {
         ctx.audio.toll(30);
         ctx.hud.say(T('In fondo al lago, due figure in piedi ti guardano.', 'At the bottom of the lake, two standing figures watch you.'), 3200);
       } else if (!d.end) {
-        ctx.hud.goal(T('raggiungi le due figure', 'reach the two figures'), Math.round(p.pos.distanceTo(d.poets.pos)) + ' m');
+        ctx.hud.goal(T('raggiungi i due poeti', 'reach the two poets'), Math.round(p.pos.distanceTo(d.poets.pos)) + ' m');
         if (p.pos.distanceTo(d.poets.pos) < 3) {
           d.end = ctx.time; p.frozen = true;
           ctx.hud.say(T('Sono Dante e Virgilio. Ti guardano dall’alto, come si guarda un dannato. Sei tu, la testa nel ghiaccio.', 'It is Dante and Virgil. They look down at you, the way one looks at the damned. You are the head in the ice.'), 4600);

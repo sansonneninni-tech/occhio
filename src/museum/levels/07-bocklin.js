@@ -44,8 +44,8 @@ export default {
     'Still water, no wind. A boat carries a white coffin towards an island of rock and cypresses. Standing before the coffin, a veiled figure.'),
   rule: T('Sull’isola i morti sono invisibili. Li vedi solo riflessi, capovolti, nell’acqua e nella pietra bagnata. Spara al riflesso: il colpo rimbalza sull’acqua e li prende. I cipressi si muovono solo quando non li guardi.',
     'On the island the dead are invisible. You only see them reflected, upside down, in the water and the wet stone. Shoot the reflection: the shot bounces off the water and hits them. The cypresses move only when you are not looking.'),
-  ruleShort: T('guarda l’acqua: spara ai riflessi', 'watch the water: shoot the reflections'),
-  goal: T('Apri il cancello dei cipressi e raggiungi la bara.', 'Open the gate of the cypresses and reach the coffin.'),
+  ruleShort: T('i velati si vedono solo nell’acqua: spara al riflesso', 'the veiled show only in the water: shoot the reflection'),
+  goal: T('Abbatti 12 morti per aprire il cancello, altri 12 per aprire la bara, poi raggiungila.', 'Kill 12 dead to open the gate, 12 more to open the coffin, then reach it.'),
   paint: '#d8d4c8',
   accent: '#9fb2c8',
   fx: { mono: 0.35, tint: [0.86, 0.9, 1.0], keepRed: 0.2, contrast: 0.6, exposure: 1.15, grain: 0.55, scratches: 0.3, dust: 0.4, flicker: 0.2, weave: 0.2, smear: 0.35, vignette: 0.65 },
@@ -216,7 +216,7 @@ export default {
     ctx.data.veil = ctx.spawner({ kinds: [{ def: VEILED, w: 1 }], first: 3, every: 2.4, max: 4, where: () => near(lakeSpawns.concat(tombSpawns), 9) });
     ctx.data.tombs = ctx.spawner({ kinds: [{ def: TOMB, w: 3 }, { def: DOOR, w: 1 }], first: 1, every: 3.2, max: 3, where: () => near(tombSpawns, 7) });
     ctx.data.cyp = null;
-    ctx.hud.goal(T('morti da rimandare', 'dead to send back'), 12);
+    ctx.hud.goal(T('morti da abbattere (cancello)', 'dead to kill (gate)'), 12);
     ctx.pickup(ctx.map.toWorld(12, 14), { kind: 'heal', amount: 35 });
     ctx.pickup(ctx.map.toWorld(5, 6), { kind: 'heal', amount: 25 });
     ctx.after(1.2, (c) => c.hud.say(T('Guarda in basso. L’acqua li vede.', 'Look down. The water sees them.'), 3200));
@@ -237,7 +237,7 @@ export default {
     d.sky.material.color.setRGB(0.56 - climb * 0.2, 0.6 - climb * 0.22, 0.66 - climb * 0.2);
 
     if (d.phase === 0) {
-      ctx.hud.goal(T('morti da rimandare', 'dead to send back'), Math.max(0, 12 - ctx.kills));
+      ctx.hud.goal(T('morti da abbattere (cancello)', 'dead to kill (gate)'), Math.max(0, 12 - ctx.kills));
       if (ctx.kills >= 12) {
         d.phase = 1;
         for (const g of d.gate) ctx.map.setSolid(g.cx, g.cy, false);
@@ -248,7 +248,7 @@ export default {
         d.veil.cfg.every = 1.8; d.veil.cfg.max = 7;
       }
     } else if (d.phase === 1) {
-      ctx.hud.goal(T('morti da rimandare', 'dead to send back'), Math.max(0, 24 - ctx.kills));
+      ctx.hud.goal(T('morti da abbattere (bara)', 'dead to kill (coffin)'), Math.max(0, 24 - ctx.kills));
       if (ctx.kills >= 24) {
         d.phase = 2;
         ctx.hud.say(T('La bara si è aperta. Va’ a vedere di chi è.', 'The coffin has opened. Go and see whose it is.'), 3400);
