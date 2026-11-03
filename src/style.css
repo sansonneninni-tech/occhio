@@ -588,6 +588,35 @@ a { color: inherit; }
 .mz-tr[hidden] { display: none; }
 @media (max-width: 760px) { .mz-bars { top: calc(150px + var(--rear-off, 0px)); left: 14px; transform: none; width: 46%; } .mz-xbar small { text-align: left; } .mz-act-hint { display: none; } }
 
+/* museo: obiettivo sempre leggibile */
+.mz-tr { align-items: flex-end; gap: 8px; max-width: min(34%, 320px); }
+.mz-count { display: flex; flex-direction: column; align-items: flex-end; }
+.mz-count[hidden] { display: none; }
+.mz-obj { pointer-events: auto; display: block; text-align: right; font: inherit; color: #f4ecd8; background: rgba(8, 4, 3, .62); border: 1px solid rgba(244, 236, 216, .22); border-right: 3px solid var(--mz-accent, #ff5a4a); padding: 7px 10px; cursor: pointer; }
+.mz-obj[hidden] { display: none; }
+.mz-obj small { display: block; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--mz-accent, #ff5a4a); opacity: 1; font-weight: 700; }
+.mz-obj p { margin: 1px 0 0; font-size: 13px; line-height: 1.3; }
+.mz-obj .mz-obj-r { margin-top: 6px; }
+.mz-obj p + small + p, .mz-obj p:last-child { opacity: .85; }
+.mz-banner-goal { display: block; margin: 16px auto 0; max-width: 560px; padding: 10px 16px; font-family: var(--fell); font-weight: 400; font-size: clamp(18px, 2.4vw, 26px); line-height: 1.25; background: rgba(0, 0, 0, .6); border-left: 4px solid var(--mz-accent, #ff5a4a); }
+.mz-banner-goal small { display: block; font-family: inherit; font-size: 11px; letter-spacing: .3em; margin-bottom: 4px; }
+.mz-todo { margin: 8px 0 14px; display: grid; gap: 8px; }
+.mz-todo .mz-rule { margin: 0; }
+.mz-todo-goal { padding: 12px 14px; background: #2a0f0a; border: 1px solid #6a2a1c; border-left: 4px solid var(--mz-accent, #ff5a4a); }
+.mz-todo-goal small { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--mz-accent, #ff5a4a); font-weight: 700; }
+.mz-todo-goal p { margin: 4px 0 0 !important; color: #fff6e4 !important; font-size: 18px; font-weight: 600; line-height: 1.3; }
+.mz-keys { margin: 0 !important; font-family: var(--mono); font-size: 11px !important; letter-spacing: .02em; color: #b8a888 !important; line-height: 1.5; }
+@media (max-width: 760px) {
+  .mz-tr { max-width: 46%; }
+  .mz-obj { padding: 5px 8px; }
+  .mz-obj p { font-size: 11px; }
+  .mz-todo-goal p { font-size: 16px; }
+}
+/* on touch the pause button sits next to the lives, so it never covers the objective */
+.mz.is-touch .mz-pause-btn { right: auto; left: 72px; top: 80px; width: 32px; height: 32px; }
+@media (max-width: 760px) { .mz-tl { max-width: 50%; } }
+@media (max-width: 760px) { .mz-banner { top: 58%; } .mz-banner b { font-size: 64px; } .mz-banner-goal { margin-top: 10px; } }
+
 /* ---------- Folli: shared bits ---------- */
 .f-meter { display: inline-flex; align-items: center; gap: 10px; font: 600 12px/1 var(--mono, 'JetBrains Mono', monospace); text-transform: uppercase; letter-spacing: .06em; }
 .f-meter-bar { position: relative; display: block; width: min(320px, 52vw); height: 14px; border: var(--line); border-radius: 99px; overflow: hidden; background: var(--paper); }
