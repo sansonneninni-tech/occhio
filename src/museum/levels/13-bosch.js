@@ -28,6 +28,7 @@ export default {
   goal: T('Scendi all’orchestra e abbatti il Principe dell’Inferno.', 'Go down to the orchestra and bring down the Prince of Hell.'),
   paint: '#c84a14',
   accent: '#ff7a2a',
+  player: { hp: 140 },
   fx: { mono: 0.35, tint: [1.0, 0.82, 0.62], keepRed: 0.9, contrast: 0.7, exposure: 1.15, grain: 0.55, scratches: 0.4, dust: 0.6, flicker: 0.25, vignette: 0.75 },
   discovery: {
     title: T('La canzone scritta su un sedere', 'The song written on a backside'),
@@ -71,11 +72,11 @@ export default {
         '##########GGGGG###########',
         '#.....N...........N......#',
         '#..h.......M.........u...#',
-        '#........................#',
+        '#...S....................#',
         '#.M......d........M......#',
         '#..............h.........#',
         '#....u...................#',
-        '#..........S.......M.....#',
+        '#..................M.....#',
         '#.M......................#',
         '#...........T............#',
         '############Q#############',
@@ -159,14 +160,14 @@ export default {
     const defs = {};
     defs.ears = {
       name: T('Orecchie col coltello', 'Ears with a knife'),
-      sprite: ears, height: 1.5, hp: 2.2, speed: 2.6, dmg: 6, reach: 1.4, radius: 0.6,
+      sprite: ears, height: 1.5, hp: 1.2, speed: 2.6, dmg: 3, attackEvery: 1.1, reach: 1.4, radius: 0.6,
       behavior: onBeat(B.charge),
       update(m) { m.view.sprite.rotation.z = m.state.mode === 'dash' ? Math.sin(m.seed + performance.now() / 90) * 0.5 : Math.sin(performance.now() / 400 + m.seed) * 0.08; },
       twitch: 0.6, rot: 0.3, blood: 0x8a1a10,
     };
     defs.hare = {
       name: T('La lepre cacciatrice', 'The hunting hare'),
-      sprite: hare, height: 1.7, hp: 1.6, speed: 3.2, dmg: 5, behavior: onBeat(B.crawl),
+      sprite: hare, height: 1.7, hp: 0.9, speed: 2.1, dmg: 2.5, attackEvery: 1.1, behavior: onBeat(B.crawl),
       // its horn calls the pack: the monsters around it run faster for a while
       update(m, c, dt) {
         m.data.horn = (m.data.horn ?? 3 + Math.random() * 3) - dt;
@@ -181,7 +182,7 @@ export default {
     };
     defs.pig = {
       name: T('Il maiale vestito da suora', 'The pig dressed as a nun'),
-      sprite: pignun, height: 2.1, hp: 3.5, speed: 1.9, dmg: 5, reach: 1.5, radius: 0.55,
+      sprite: pignun, height: 2.1, hp: 2, speed: 1.9, dmg: 3, attackEvery: 1.1, reach: 1.5, radius: 0.55,
       behavior: onBeat(B.chase), attackEvery: 1.6,
       // the embrace: it holds you still for a moment
       onAttack(m, c) {
@@ -193,7 +194,7 @@ export default {
     };
     defs.knight = {
       name: T('Il cavaliere-pentola', 'The cauldron knight'),
-      sprite: knight, height: 1.5, hp: 2.5, speed: 2.2, dmg: 7, radius: 0.55,
+      sprite: knight, height: 1.5, hp: 1.2, speed: 2.2, dmg: 4, attackEvery: 1.1, radius: 0.55,
       behavior: onBeat(B.chase),
       // armour: only a shot on the beat goes through
       onHit(m, shot, c) {
@@ -221,7 +222,7 @@ export default {
     };
     defs.prince = {
       name: T('Il Principe dell’Inferno', 'The Prince of Hell'),
-      sprite: prince, height: 4.6, hp: 34, speed: 0, dmg: 10, reach: 2.4, radius: 1.3, boss: true, fixed: false,
+      sprite: prince, height: 4.6, hp: 26, speed: 0, dmg: 10, reach: 2.4, radius: 1.3, boss: true, fixed: false,
       behavior: 'still',
       zones: [{ name: 'testa', x: [-0.4, 0.25], y: [0.68, 0.98], mul: 2 }],
       onHit(m, shot, c) {
@@ -241,7 +242,7 @@ export default {
       const pts = c.map.find('spawn').filter((p) => p.distanceTo(pp) > 7 && p.distanceTo(pp) < 26 && (D.gateOpen || p.cy < 22));
       return pts[Math.floor(Math.random() * pts.length)] || null;
     };
-    D.waves = ctx.spawner({ kinds: [{ def: defs.ears, w: 3 }, { def: defs.hare, w: 3 }, { def: defs.knight, w: 2 }, { def: defs.pig, w: 1 }], first: 4, every: 1.5, burst: 2, max: 9, where: city });
+    D.waves = ctx.spawner({ kinds: [{ def: defs.ears, w: 3 }, { def: defs.hare, w: 3 }, { def: defs.knight, w: 2 }, { def: defs.pig, w: 1 }], first: 3, every: 2.6, burst: 1, max: 5, where: city });
 
     // the score man lies under the lute, near the throne; the Prince waits behind the gate
     const sp = ctx.map.find('score')[0];
@@ -325,7 +326,7 @@ export default {
     const D = ctx.data;
     const sec = 60 / D.bpm;
     const off = Math.min(D.pulse, 1 - D.pulse) * sec; // seconds from the nearest beat
-    shot.onBeat = off < 0.13;
+    shot.onBeat = off < 0.15;
     if (shot.onBeat) {
       shot.dmg *= 3;
       D.streak++;
@@ -337,7 +338,9 @@ export default {
     }
   },
 
-  onKill(ctx, m) {
+  onKill(ctx, m, shot) {
+    // a kill on the beat feeds you a little
+    if (shot?.onBeat && m !== ctx.data.prince) ctx.player.heal(5);
     if (m === ctx.data.prince) {
       ctx.data.waves.stop();
       ctx.audio.toll(55);
@@ -363,8 +366,8 @@ function beat(ctx, D) {
   ctx.view.shake = Math.max(ctx.view.shake || 0, strong ? 0.12 : 0.05);
   // the Prince spits a damned at you on every other beat
   const pr = D.prince;
-  if (pr && !pr.dead && D.beatN % 2 === 0 && ctx.monsters.sees(pr) && pr.pos.distanceTo(ctx.player.pos) < 22) {
-    ctx.shoot(pr, { speed: 8, dmg: 7, color: 0xd8b8a0, size: 0.28 });
+  if (pr && !pr.dead && D.beatN % 4 === 2 && ctx.monsters.sees(pr) && pr.pos.distanceTo(ctx.player.pos) < 22) {
+    ctx.shoot(pr, { speed: 8, dmg: 6, color: 0xd8b8a0, size: 0.28 });
   }
 }
 
