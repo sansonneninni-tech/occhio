@@ -78,8 +78,8 @@ export default {
   title: { it: 'Il Museo Maledetto', en: 'The Cursed Museum' },
   tagline: { it: 'Di notte i soggetti escono dai quadri. Rimandali dentro, sala dopo sala. 40 opere, 40 incubi.', en: 'At night the subjects crawl out of the paintings. Send them back, hall after hall. 40 works, 40 nightmares.' },
   how: {
-    it: 'Ogni sala è un quadro inquietante (dal 1400 al 1900): i suoi soggetti sono diventati mostri, ognuno con poteri suoi.|Sparagli col pennello-cannone: quando muoiono tornano volando nella cornice vuota più vicina. Svuota la sala e il quadro è restaurato.|PC: clicca per bloccare il mouse, WASD per muoverti, mouse per guardare e sparare, E per la trementina (bomba), Esc pausa. Telefono: joystick a sinistra, trascina a destra per guardare, tasti FUOCO e BOMBA.|Ogni 5 sale c’è un mostro enorme e si sblocca un punto di partenza. Arrivare alla sala XXV è un’impresa. La XL è da bestia.',
-    en: 'Every hall is an unsettling painting (1400s to 1900s): its subjects have become monsters, each with its own powers.|Shoot them with the brush-cannon: when they die they fly back into the nearest empty frame. Clear the hall and the painting is restored.|PC: click to lock the mouse, WASD to move, mouse to look and shoot, E for turpentine (bomb), Esc to pause. Phone: joystick on the left, drag on the right to look, FIRE and BOMB buttons.|Every 5 halls a huge monster waits and a new starting point unlocks. Reaching hall XXV is a feat. XL is hellish.',
+    it: '40 livelli: ogni livello è una sala dedicata a un quadro inquietante (dal 1400 al 1900): i suoi soggetti sono diventati mostri, ognuno con poteri suoi.|Sparagli col pennello-cannone: quando muoiono tornano volando nella cornice vuota più vicina. Svuota la sala e il quadro è restaurato.|PC: clicca per bloccare il mouse, WASD per muoverti, mouse per guardare e sparare, E per la trementina (bomba), Esc pausa. Telefono: joystick a sinistra, trascina a destra per guardare, tasti FUOCO e BOMBA.|Ogni 5 livelli c’è un mostro enorme e si sblocca un punto di partenza. Arrivare al livello 25 è un’impresa. Il 40 è da bestia.',
+    en: '40 levels: each level is a hall devoted to an unsettling painting (1400s to 1900s): its subjects have become monsters, each with its own powers.|Shoot them with the brush-cannon: when they die they fly back into the nearest empty frame. Clear the hall and the painting is restored.|PC: click to lock the mouse, WASD to move, mouse to look and shoot, E for turpentine (bomb), Esc to pause. Phone: joystick on the left, drag on the right to look, FIRE and BOMB buttons.|Every 5 levels a huge monster waits and a new starting point unlocks. Reaching level 25 is a feat. Level 40 is hellish.',
   },
   thumb: () => `<svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><rect width="160" height="100" fill="#0b0807"/><path d="M0 100 L60 52 L100 52 L160 100Z" fill="#1a120c"/><path d="M0 0 L60 40 L100 40 L160 0Z" fill="#060403"/><rect x="60" y="40" width="40" height="12" fill="#2a1c14"/><rect x="66" y="42" width="28" height="8" fill="#c8a040"/><rect x="68" y="43" width="24" height="6" fill="#050303"/><circle cx="76" cy="46" r="1.6" fill="#ff2020"/><circle cx="84" cy="46" r="1.6" fill="#ff2020"/><rect x="18" y="20" width="22" height="30" fill="#c8a040" transform="skewY(18)"/><rect x="21" y="23" width="16" height="24" fill="#6a1a10" transform="skewY(18)"/><rect x="120" y="44" width="22" height="30" fill="#c8a040" transform="skewY(-18)"/><rect x="123" y="47" width="16" height="24" fill="#050303" transform="skewY(-18)"/></svg>`,
 
@@ -95,7 +95,11 @@ export default {
     const hpFill = h('i'), hpNum = h('b', {}, '100');
     const bombsEl = h('span', { class: 'mz-bombs' });
     const leftEl = h('b', {}, '0');
-    const titleEl = h('span', {});
+    const lvlNum = h('b', {}, '1'), lvlSub = h('span', {});
+    const titleEl = h('div', { class: 'mz-level' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('div', {}, lvlNum, h('i', {}, '/40')), lvlSub);
+    const plaqueA = h('b', {}), plaqueB = h('span', {});
+    const plaque = h('div', { class: 'mz-plaque' }, plaqueA, plaqueB);
+    const banner = h('div', { class: 'mz-banner' });
     const bossFill = h('i');
     const bossEl = h('div', { class: 'mz-boss', hidden: true }, h('small', {}, ''), h('div', { class: 'mz-bar' }, bossFill));
     const whisper = h('div', { class: 'mz-whisper' });
@@ -107,10 +111,10 @@ export default {
     const joy = h('div', { class: 'mz-joy', hidden: true }, knob);
     const hudEl = h('div', { class: 'mz-hud', hidden: true },
       h('div', { class: 'mz-tl' }, titleEl),
-      h('div', { class: 'mz-tr' }, h('small', {}, L({ it: 'anime libere', en: 'loose souls' })), leftEl),
+      h('div', { class: 'mz-tr' }, h('small', {}, L({ it: 'mostri rimasti', en: 'monsters left' })), leftEl),
       bossEl,
       h('div', { class: 'mz-cross' }),
-      whisper,
+      whisper, plaque, banner,
       h('div', { class: 'mz-bl' }, h('div', { class: 'mz-hp' }, h('small', {}, L({ it: 'vita', en: 'life' })), h('div', { class: 'mz-bar' }, hpFill), hpNum), bombsEl),
       joy, fireBtn, bombBtn, pauseBtn);
     const layer = h('div', { class: 'mz-layer' });
@@ -152,6 +156,27 @@ export default {
     E.S.touch = coarse;
     root.classList.toggle('is-touch', coarse);
 
+    // Plaque: when you face a frame up close, the label tells you what you are looking at.
+    let plaqueKey = '';
+    const pTimer = setInterval(() => {
+      const S = E.S;
+      let key = '';
+      if (run.playing && !S.paused && S.lookDist < 3.4) key = S.lookCell === 2 ? 'art' : S.lookCell === 3 ? 'empty' : '';
+      if (key === plaqueKey) return;
+      plaqueKey = key;
+      const lv = LEVELS[run.idx];
+      if (key === 'art') { plaqueA.textContent = L(lv.title); plaqueB.textContent = `${lv.artist} · ${lv.year}`; }
+      if (key === 'empty') { plaqueA.textContent = L({ it: 'Cornice vuota', en: 'Empty frame' }); plaqueB.textContent = L({ it: `qui c’era un ${L(lv.monster.name).toLowerCase()}: uccidilo e torna dentro`, en: `a ${L(lv.monster.name).toLowerCase()} escaped from here: kill it and it goes back in` }); }
+      plaque.classList.toggle('is-on', !!key);
+      plaque.classList.toggle('is-empty', key === 'empty');
+    }, 150);
+
+    function showBanner(kids, ms = 3400) {
+      banner.replaceChildren(...kids);
+      banner.getAnimations?.().forEach((a) => a.cancel());
+      banner.animate?.([{ opacity: 0, transform: 'translate(-50%, -40%) scale(.96)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.12 }, { opacity: 1, offset: 0.78 }, { opacity: 0, transform: 'translate(-50%, -56%)' }], { duration: ms, easing: 'ease-in-out', fill: 'forwards' });
+    }
+
     function say() {
       const list = WHISPERS[lang()];
       whisper.textContent = list[Math.floor(Math.random() * list.length)];
@@ -178,17 +203,17 @@ export default {
         const startable = seen && i % 5 === 0;
         const thumb = seen ? paintingArt(lv, i, 160, 120) : null;
         if (thumb) thumb.className = 'mz-hall-art';
-        const b = h('button', { class: `mz-hall${startable ? ' is-start' : ''}${seen ? '' : ' is-locked'}${prog.restored.includes(i) ? ' is-done' : ''}`, type: 'button', disabled: !startable, 'aria-label': `${ROMAN(i + 1)} ${seen ? L(lv.title) : ''}` },
+        const b = h('button', { class: `mz-hall${startable ? ' is-start' : ''}${seen ? '' : ' is-locked'}${prog.restored.includes(i) ? ' is-done' : ''}`, type: 'button', disabled: !startable, 'aria-label': `${L({ it: 'Livello', en: 'Level' })} ${i + 1} ${seen ? L(lv.title) : ''}` },
           thumb || h('span', { class: 'mz-hall-art mz-hall-art--dark' }, '?'),
-          h('b', {}, ROMAN(i + 1)),
+          h('b', {}, String(i + 1)),
           (i + 1) % 5 === 0 ? h('em', {}, 'boss') : null);
         if (startable) b.onclick = () => begin(i);
         grid.append(b);
       });
       card('mz-card--select',
-        h('small', { class: 'mz-kicker' }, L({ it: 'Il Museo Maledetto · 40 sale', en: 'The Cursed Museum · 40 halls' })),
-        h('h2', {}, L({ it: 'Da quale sala entri?', en: 'Which hall do you enter?' })),
-        h('p', {}, L({ it: 'Le sale si rivelano quando le raggiungi. Ogni 5 si sblocca un nuovo ingresso. Punteggio e quadri restaurati restano su questo dispositivo.', en: 'Halls reveal themselves when you reach them. Every 5, a new entrance unlocks. Score and restored paintings stay on this device.' })),
+        h('small', { class: 'mz-kicker' }, L({ it: 'Il Museo Maledetto · 40 livelli', en: 'The Cursed Museum · 40 levels' })),
+        h('h2', {}, L({ it: 'Da quale livello parti?', en: 'Which level do you start from?' })),
+        h('p', {}, L({ it: 'Ogni livello è una sala del museo dedicata a un quadro. Svuoti la sala, passi al livello dopo, sempre più difficile. Ogni 5 livelli c’è un boss e si sblocca un nuovo punto di partenza. Punteggio e quadri restano su questo dispositivo.', en: 'Each level is a museum hall devoted to one painting. Clear the hall and you move on to the next, harder level. Every 5 levels there is a boss and a new starting point unlocks. Score and paintings stay on this device.' })),
         grid,
         h('p', { class: 'mz-fine' }, L({ it: 'Le opere sono omaggi procedurali ispirati ai dipinti originali, non riproduzioni.', en: 'Artworks are procedural homages inspired by the original paintings, not reproductions.' })));
     }
@@ -197,7 +222,7 @@ export default {
 
     function intro(i) {
       const lv = LEVELS[i], d = difficulty(i);
-      api.hud(L({ it: 'Sala', en: 'Hall' }), `${ROMAN(i + 1)}/XL`);
+      api.hud(L({ it: 'Livello', en: 'Level' }), `${i + 1}/40`);
       E.load(i);
       E.render();
       hudEl.hidden = true;
@@ -206,22 +231,41 @@ export default {
       card(`mz-card--intro${d.boss ? ' is-boss' : ''}`,
         h('div', { class: 'mz-frame' }, art),
         h('div', { class: 'mz-info' },
-          h('small', { class: 'mz-kicker' }, `${L({ it: 'Sala', en: 'Hall' })} ${ROMAN(i + 1)} / XL ${d.boss ? '· BOSS' : ''}`),
-          h('h2', {}, L(lv.title)),
+          h('div', { class: 'mz-lvl-head' },
+            h('span', { class: 'mz-lvl-big' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('b', {}, String(i + 1)), h('i', {}, '/40')),
+            h('span', { class: 'mz-kicker' }, `${L({ it: 'Sala', en: 'Hall' })} ${ROMAN(i + 1)}${d.boss ? ' · BOSS' : ''}`)),
+          track(i),
           h('p', { class: 'mz-artist' }, `${lv.artist} · ${lv.year}`),
+          h('h2', {}, L(lv.title)),
           h('p', { class: 'mz-note' }, L(lv.note)),
           h('div', { class: 'mz-mon' }, h('small', {}, L({ it: 'Cosa è uscito dal quadro', en: 'What crawled out' })), h('b', {}, `${d.boss ? (lang() === 'en' ? 'The Great ' : 'Il Grande ') : ''}${L(lv.monster.name)}`), h('span', { class: 'mz-threat', title: 'threat' }, skulls)),
           h('ul', { class: 'mz-abil' }, lv.abilities.map((a) => h('li', {}, h('b', {}, L(ABIL[a])), ' ', L(ABIL[a].d)))),
+          h('p', { class: 'mz-goal' }, i === LEVELS.length - 1
+            ? L({ it: 'Obiettivo: uccidi tutti i mostri della sala. È l’ultimo livello.', en: 'Goal: kill every monster in the hall. This is the last level.' })
+            : L({ it: `Obiettivo: uccidi tutti i mostri della sala per passare al livello ${i + 2}.`, en: `Goal: kill every monster in the hall to reach level ${i + 2}.` })),
           h('div', { class: 'mz-row' },
-            btn(L({ it: 'Entra nella sala', en: 'Enter the hall' }) + ' →', () => enter()),
-            i === run.start ? btn(L({ it: 'Cambia sala', en: 'Other hall' }), () => select(), 'mz-cta--ghost') : null)));
+            btn(L({ it: `Inizia il livello ${i + 1}`, en: `Start level ${i + 1}` }) + ' →', () => enter()),
+            i === run.start ? btn(L({ it: 'Cambia livello', en: 'Other level' }), () => select(), 'mz-cta--ghost') : null)));
+    }
+
+    // 40 ticks: done, current, still to come
+    function track(i) {
+      return h('div', { class: 'mz-track', 'aria-hidden': 'true' }, LEVELS.map((_, k) => h('i', { class: `${k < i ? 'is-past' : ''}${k === i ? ' is-now' : ''}${(k + 1) % 5 === 0 ? ' is-boss' : ''}` })));
     }
 
     function lockPointer() { if (coarse) return; try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch {} }
     function enter() {
       closeCard();
       hudEl.hidden = false;
-      titleEl.textContent = `${ROMAN(run.idx + 1)} · ${LEVELS[run.idx].artist}`;
+      const lv = LEVELS[run.idx];
+      lvlNum.textContent = String(run.idx + 1);
+      lvlSub.textContent = `${lv.artist} · ${L(lv.title)}`;
+      showBanner([
+        h('small', {}, L({ it: 'Livello', en: 'Level' })),
+        h('b', {}, String(run.idx + 1)),
+        h('span', {}, L(lv.title)),
+        h('em', {}, L({ it: `Uccidi i ${E.S.total} mostri della sala`, en: `Kill the ${E.S.total} monsters in the hall` })),
+      ]);
       run.playing = true;
       whisperT = 5;
       E.setPaused(false); E.run();
@@ -261,7 +305,8 @@ export default {
       card('mz-card--clear',
         h('div', { class: 'mz-frame is-restored' }, art),
         h('div', { class: 'mz-info' },
-          h('small', { class: 'mz-kicker' }, `${L({ it: 'Sala', en: 'Hall' })} ${ROMAN(i + 1)} · ${L({ it: 'quadro restaurato', en: 'painting restored' })}`),
+          h('small', { class: 'mz-kicker' }, `${L({ it: 'Livello', en: 'Level' })} ${i + 1} ${L({ it: 'superato', en: 'cleared' })} · ${L({ it: 'quadro restaurato', en: 'painting restored' })}`),
+          track(i + 1),
           h('h2', {}, L(lv.title)),
           h('p', { class: 'mz-artist' }, `${lv.artist} · ${lv.year}`),
           h('div', { class: 'mz-stats' },
@@ -271,7 +316,7 @@ export default {
             h('div', {}, h('small', {}, L({ it: 'tempo', en: 'time' })), h('b', {}, Math.round(st.time) + 's')),
             h('div', {}, h('small', {}, 'bonus'), h('b', {}, '+' + bonus))),
           h('div', { class: 'mz-row' },
-            last ? btn(L({ it: 'Hai liberato il museo', en: 'You freed the museum' }) + ' →', () => finish(true)) : btn(L({ it: 'Sala successiva', en: 'Next hall' }) + ` ${ROMAN(i + 2)} →`, () => { run.idx = i + 1; intro(run.idx); }),
+            last ? btn(L({ it: 'Hai liberato il museo', en: 'You freed the museum' }) + ' →', () => finish(true)) : btn(L({ it: `Vai al livello ${i + 2}`, en: `Go to level ${i + 2}` }) + ' →', () => { run.idx = i + 1; intro(run.idx); }),
             btn(L({ it: 'Scarica il quadro', en: 'Download painting' }), () => restoredPainting(i, store.name, lang()).toBlob((b) => download(`occhio-museo-${i + 1}.png`, b), 'image/png'), 'mz-cta--ghost'),
             btn(L({ it: 'Esci', en: 'Quit' }), () => finish(false), 'mz-cta--ghost'))));
     }
@@ -281,7 +326,7 @@ export default {
       try { document.exitPointerLock?.(); } catch {}
       stopKeys();
       card('mz-card--dead',
-        h('small', { class: 'mz-kicker' }, `${L({ it: 'Sala', en: 'Hall' })} ${ROMAN(run.idx + 1)}`),
+        h('small', { class: 'mz-kicker' }, `${L({ it: 'Livello', en: 'Level' })} ${run.idx + 1} / 40`),
         h('h2', {}, L({ it: 'Il museo ti ha incorniciato.', en: 'The museum framed you.' })),
         h('p', {}, L({ it: `Ora sei tu, appeso in ${L(LEVELS[run.idx].title)}.`, en: `Now it is you, hanging in ${L(LEVELS[run.idx].title)}.` })),
         h('div', { class: 'mz-row' }, btn(L({ it: 'Vedi il risultato', en: 'See results' }), () => finish(false))));
@@ -299,7 +344,7 @@ export default {
       if (restored.length) exports.push({ label: L({ it: 'La tua galleria (PNG)', en: 'Your gallery (PNG)' }), run: () => gallerySheet(restored, store.name, lang()).toBlob((b) => download('occhio-museo-galleria.png', b), 'image/png') });
       restored.slice(-6).forEach((i) => exports.push({ label: `${ROMAN(i + 1)} · PNG`, run: () => restoredPainting(i, store.name, lang()).toBlob((b) => download(`occhio-museo-${i + 1}.png`, b), 'image/png') }));
       const summary = restored.length
-        ? L({ it: `Sale restaurate: ${restored.length} (da ${ROMAN(run.start + 1)} a ${ROMAN(restored[restored.length - 1] + 1)})${won ? ' · MUSEO LIBERATO' : ''}`, en: `Halls restored: ${restored.length} (${ROMAN(run.start + 1)} to ${ROMAN(restored[restored.length - 1] + 1)})${won ? ' · MUSEUM FREED' : ''}` })
+        ? L({ it: `Livelli superati: ${restored.length} (dal ${run.start + 1} al ${restored[restored.length - 1] + 1})${won ? ' · MUSEO LIBERATO' : ''}`, en: `Levels cleared: ${restored.length} (${run.start + 1} to ${restored[restored.length - 1] + 1})${won ? ' · MUSEUM FREED' : ''}` })
         : L({ it: 'Nessuna sala restaurata. Il museo ride.', en: 'No hall restored. The museum laughs.' });
       api.end({ exports, summary });
     }
@@ -388,7 +433,7 @@ export default {
 
     select();
     api.onCleanup(() => {
-      clearInterval(wTimer); ro.disconnect(); E.destroy();
+      clearInterval(wTimer); clearInterval(pTimer); ro.disconnect(); E.destroy();
       window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey);
       document.removeEventListener('pointermove', onMouseMove); window.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointerlockchange', onLock); document.removeEventListener('visibilitychange', onVis);
