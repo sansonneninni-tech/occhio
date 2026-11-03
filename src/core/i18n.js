@@ -24,7 +24,7 @@ document.documentElement.lang = lang;
 
 export const UI = {
   enterTitle: { it: 'Allena l’occhio.', en: 'Train your eye.' },
-  enterSub: { it: '21 mini giochi per grafici, illustratori e 3D artist. Scrivi un nome e sfida i record.', en: '21 mini games for designers, illustrators and 3D artists. Pick a name and chase the records.' },
+  enterSub: { it: '15 giochi d’azione che ti lasciano un’opera, più un museo maledetto da 40 sale. Scrivi un nome e sfida i record.', en: '15 action games that leave you an artwork, plus a cursed museum with 40 halls. Pick a name and chase the records.' },
   namePh: { it: 'Il tuo nome', en: 'Your name' },
   play: { it: 'Gioca', en: 'Play' },
   hello: { it: 'Ciao, {name}', en: 'Hi, {name}' },
@@ -34,6 +34,11 @@ export const UI = {
   design: { it: 'Design', en: 'Design' },
   '3d': { it: '3D', en: '3D' },
   arte: { it: 'Arte', en: 'Art' },
+  museo: { it: 'Museo', en: 'Museum' },
+  mzKicker: { it: 'Il gioco grande · 40 sale', en: 'The big game · 40 halls' },
+  mzEnter: { it: 'Entra nel museo', en: 'Enter the museum' },
+  mzHalls: { it: 'sale restaurate', en: 'halls restored' },
+  mzWarn: { it: 'Contiene immagini inquietanti. Cuffie consigliate.', en: 'Contains unsettling imagery. Headphones recommended.' },
   games: { it: 'giochi', en: 'games' },
   best: { it: 'Record', en: 'Best' },
   notPlayed: { it: 'Mai giocato', en: 'Not played' },
@@ -61,7 +66,7 @@ export const UI = {
   timeUp: { it: 'TEMPO!', en: 'TIME!' },
   go: { it: 'VIA!', en: 'GO!' },
   sound: { it: 'Suono', en: 'Sound' },
-  marquee: { it: 'COLORE ✦ FORMA ✦ LUCE ✦ PROPORZIONE ✦ CONTRASTO ✦ PROSPETTIVA ✦ TIPOGRAFIA ✦ ', en: 'COLOR ✦ SHAPE ✦ LIGHT ✦ PROPORTION ✦ CONTRAST ✦ PERSPECTIVE ✦ TYPE ✦ ' },
+  marquee: { it: 'GIOCA ✦ DIPINGI ✦ STAMPA ✦ SCOLPISCI ✦ SCARICA L’OPERA ✦ BATTI IL RECORD ✦ ', en: 'PLAY ✦ PAINT ✦ PRINT ✦ SCULPT ✦ TAKE THE ARTWORK ✦ BEAT THE RECORD ✦ ' },
   rules: { it: 'Regole di design del gioco', en: 'Game design rules' },
   loading: { it: 'Carico…', en: 'Loading…' },
 };

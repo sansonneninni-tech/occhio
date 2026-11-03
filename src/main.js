@@ -3,7 +3,7 @@ import { h } from './core/dom.js';
 import { t, getLang, setLang, onLang, UI } from './core/i18n.js';
 import { store } from './core/store.js';
 import { sfx, animate } from './core/fx.js';
-import { GAMES, CATS } from './games/index.js';
+import { GAMES, CATS, MUSEUM, ALL } from './games/index.js';
 import { openGame } from './core/shell.js';
 
 const app = document.getElementById('app');
@@ -90,15 +90,36 @@ function dashboard() {
       ),
       h('div', { class: 'dash-stats' },
         h('div', { class: 'stat stat--red' }, h('small', {}, t('totalScore')), h('b', {}, sum.toLocaleString())),
-        h('div', { class: 'stat stat--blue' }, h('small', {}, t('played')), h('b', {}, `${played}/${GAMES.length}`))
+        h('div', { class: 'stat stat--blue' }, h('small', {}, t('played')), h('b', {}, `${played}/${ALL.length}`))
       )
     ),
+    museumHero(),
     marquee(),
     h('div', { class: 'dash-body' }, tabs, grid),
     h('footer', { class: 'foot' }, h('span', {}, 'OCCHIO © ' + new Date().getFullYear()), h('a', { class: 'link', href: 'https://github.com/sansonneninni-tech/occhio/blob/main/docs/game-design.md', target: '_blank', rel: 'noopener' }, t('rules')))
   );
   app.replaceChildren(view);
   fill();
+}
+
+function museumHero() {
+  const g = MUSEUM;
+  const best = store.best(g.id);
+  let prog = { max: 0, restored: [] };
+  try { prog = { ...prog, ...JSON.parse(localStorage.getItem('occhio:museum') || '{}') }; } catch {}
+  const eyes = Array.from({ length: 7 }, (_, i) => h('i', { style: { left: `${8 + i * 13 + (i % 2) * 4}%`, top: `${20 + ((i * 37) % 55)}%`, animationDelay: `${(i * 0.7) % 4}s` } }));
+  return h('a', { class: 'mz-hero', href: `#/play/${g.id}` },
+    h('div', { class: 'mz-hero-eyes', 'aria-hidden': 'true' }, eyes),
+    h('div', { class: 'mz-hero-art', html: g.thumb() }),
+    h('div', { class: 'mz-hero-body' },
+      h('small', {}, t('mzKicker')),
+      h('h2', {}, t(g.title)),
+      h('p', {}, t(g.tagline)),
+      h('div', { class: 'mz-hero-foot' },
+        h('span', { class: 'mz-hero-cta' }, t('mzEnter'), h('span', { html: '&rarr;' })),
+        h('span', { class: 'mz-hero-stat' }, h('b', {}, `${prog.restored.length}/40`), ' ', t('mzHalls')),
+        best ? h('span', { class: 'mz-hero-stat' }, h('b', {}, best.score.toLocaleString()), ' ', t('best')) : null),
+      h('em', { class: 'mz-hero-warn' }, t('mzWarn'))));
 }
 
 function card(g, idx) {
@@ -116,7 +137,7 @@ function card(g, idx) {
 }
 
 function play(id) {
-  const g = GAMES.find((x) => x.id === id);
+  const g = ALL.find((x) => x.id === id);
   if (!g) { location.hash = '#/games'; return; }
   closeCurrent = openGame(app, g, {});
   document.title = `${t(g.title)} · Occhio`;
