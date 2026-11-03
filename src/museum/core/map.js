@@ -200,7 +200,7 @@ export function createMap(scene) {
 
   const api = {
     group, build, setSolid, solid, solidCell, collide, los, rayWall, updateFlow, dirTo, toCell, toWorld, clear,
-    get width() { return W; }, get height() { return H; }, get wallHeight() { return opts.height; },
+    get width() { return W; }, get height() { return H; }, get wallHeight() { return opts.height; }, get hasCeiling() { return !!opts.ceiling; },
     cell(cx, cy) { return inside(cx, cy) ? cells[idx(cx, cy)] : null; },
     cellAt(x, z) { const [cx, cy] = toCell(x, z); return api.cell(cx, cy); },
     zoneAt(x, z) { return api.cellAt(x, z)?.zone || null; },
