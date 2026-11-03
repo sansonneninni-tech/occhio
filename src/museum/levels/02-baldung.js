@@ -23,8 +23,8 @@ export default {
   rule: T(
     'La Morte ti segue e si vede solo nello specchietto in alto. Tieni premuta l’azione per voltarti nello specchio: solo così puoi colpirla. La clessidra si svuota: ogni anima rimandata ti ridà sabbia. Non sparare alle fanciulle.',
     'Death follows you and shows only in the mirror at the top. Hold the action to turn to the mirror: only then can you hit it. The hourglass empties: every soul sent back gives you sand. Do not shoot the maidens.'),
-  ruleShort: T('la Morte è solo nello specchio', 'Death lives only in the mirror'),
-  goal: T('Spezza la clessidra della Morte.', 'Break Death’s hourglass.'),
+  ruleShort: T('tieni SPECCHIO e spara alla Morte', 'hold MIRROR and shoot Death'),
+  goal: T('Colpisci la Morte nello specchio fino a spezzarla (16 colpi, la clessidra vale 3).', 'Hit Death in the mirror until she breaks (16 hits, the hourglass counts 3).'),
   paint: '#2e5a20',
   accent: '#c8a040',
   fx: { exposure: 1.35, mono: 0.78, tint: [0.84, 0.92, 0.7], keepRed: 0.7, contrast: 0.6, grain: 0.5, scratches: 0.4, dust: 0.45, flicker: 0.3, smear: 0.3, vignette: 0.65 },
@@ -98,7 +98,7 @@ export default {
       parts: [{ type: 'strands', n: 12, len: 0.7, color: 0x6a5a30, at: [0.1, 2.28, -0.05], spread: 0.25 }],
       behavior: stalk,
       onAttack: (m, c) => { c.audio.scream(0.4, 0.25); m.state.back = 1.2; },
-      onHit: (m, shot, c) => { m.state.back = 0.6; c.audio.toll(70); return shot.dmg; },
+      onHit: (m, shot, c) => { m.state.back = 0.6; c.audio.toll(70); c.after(0, (cc) => cc.hud.goal(T('colpi alla Morte', 'hits on Death'), Math.max(0, Math.ceil(m.hp)))); return shot.dmg; },
       onDeath: (m, c) => c.after(0.5, () => c.win()),
       blood: 0xb09050,
     };
@@ -136,7 +136,7 @@ export default {
     ctx.view.rear = true;
     ctx.action({ label: T('SPECCHIO', 'MIRROR') });
     ctx.hud.bar('sand', { label: T('clessidra', 'hourglass'), value: 1, color: '#d8c080' });
-    ctx.hud.goal(T('nello specchio', 'in the mirror'), '◐');
+    ctx.hud.goal(T('colpi alla Morte', 'hits on Death'), 16);
   },
 
   update(ctx, dt) {

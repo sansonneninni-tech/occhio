@@ -24,8 +24,8 @@ export default {
   rule: T(
     'Il coperchio della tomba scende. Ogni anima che rimandi nel quadro lo solleva di un palmo. I sudari si squarciano solo dopo 4 anime: corri fino ai piedi prima che si chiuda.',
     'The lid of the tomb is coming down. Every soul you send back lifts it a hand’s breadth. The shrouds tear only after 4 souls: run to the feet before it shuts.'),
-  ruleShort: T('il coperchio scende: uccidi per sollevarlo', 'the lid comes down: kill to lift it'),
-  goal: T('Arriva ai piedi del Cristo.', 'Reach the feet of Christ.'),
+  ruleShort: T('uccidi per alzare il coperchio, vai a est', 'kill to lift the lid, head east'),
+  goal: T('Squarcia i 3 sudari (4 anime ciascuno) e arriva ai piedi del Cristo.', 'Tear the 3 shrouds (4 souls each) and reach the feet of Christ.'),
   paint: '#5a6a40',
   accent: '#9a3a28',
   fx: { exposure: 1.45, mono: 0.9, tint: [0.86, 0.9, 0.74], keepRed: 0.95, contrast: 0.62, grain: 0.55, scratches: 0.5, dust: 0.6, flicker: 0.3, smear: 0.2, vignette: 0.6 },
@@ -132,7 +132,7 @@ export default {
     ctx.data.spawner = ctx.spawner({ kinds: [{ def: hand, w: 5 }, { def: face, w: 2 }, { def: risen, w: 1 }], first: 3, every: 1.6, burst: 1, max: 4, where });
 
     ctx.hud.bar('lid', { label: T('coperchio', 'lid'), value: 1, color: '#c8c0a0' });
-    ctx.hud.goal(T('sudari da squarciare', 'shrouds to tear'), 3);
+    ctx.hud.goal(T('anime al prossimo sudario', 'souls to the next shroud'), KILLS_PER_SHROUD);
     ctx.audio.toll(48);
   },
 
@@ -172,9 +172,10 @@ export default {
       d.opened++;
       ctx.audio.burst(0.9, 900, 0.6, 0.35, 'bandpass', 200);
       ctx.hud.say(d.opened < 3 ? T('Il sudario si squarcia.', 'The shroud tears.') : T('L’ultimo sudario. I piedi sono là.', 'The last shroud. The feet are there.'), 2000);
-      ctx.hud.goal(T('sudari da squarciare', 'shrouds to tear'), 3 - d.opened);
-      if (d.opened === 3) ctx.hud.goal(T('raggiungi i piedi', 'reach the feet'), '→');
+      ctx.hud.goal(T('anime al prossimo sudario', 'souls to the next shroud'), KILLS_PER_SHROUD);
+      if (d.opened === 3) ctx.hud.goal(T('raggiungi i piedi, a est', 'reach the feet, east'), '→');
     } else {
+      if (d.opened < 3) ctx.hud.goal(T('anime al prossimo sudario', 'souls to the next shroud'), KILLS_PER_SHROUD - d.kSince);
       ctx.hud.whisper(T('il coperchio si alza di un palmo', 'the lid rises a hand’s breadth'));
     }
   },

@@ -22,8 +22,8 @@ export default {
   rule: T(
     'L’esercito dei morti avanza da est: dietro il fronte si muore. Abbatti le tre campane sugli alberi, che chiamano altri scheletri: ogni campana che tace respinge l’esercito. I coperchi delle bare parano i colpi: mira allo scheletro.',
     'The army of the dead advances from the east: behind the front you die. Bring down the three bells on the trees, which call more skeletons: every bell that falls silent pushes the army back. The coffin lids stop your shots: aim at the skeleton.'),
-  ruleShort: T('fai tacere le tre campane', 'silence the three bells'),
-  goal: T('Fai tacere le tre campane.', 'Silence the three bells.'),
+  ruleShort: T('spara alle campane, stai davanti ai morti', 'shoot the bells, stay ahead of the dead'),
+  goal: T('Abbatti le 3 campane sugli alberi morti.', 'Bring down the 3 bells on the dead trees.'),
   paint: '#8a2a10',
   accent: '#e07030',
   fx: { exposure: 1.3, mono: 0.55, tint: [1.0, 0.82, 0.6], keepRed: 0.9, contrast: 0.6, grain: 0.45, scratches: 0.45, dust: 0.7, flicker: 0.35, smear: 0.25, vignette: 0.55 },
@@ -149,7 +149,7 @@ export default {
     ctx.data.runners.stop();
 
     for (const [cx, cy] of [[10, 17], [24, 3], [29, 12]]) ctx.pickup(ctx.map.toWorld(cx, cy), { kind: 'heal', amount: 35 });
-    ctx.hud.goal(T('campane', 'bells'), 3);
+    ctx.hud.goal(T('campane rimaste', 'bells left'), 3);
     ctx.hud.bar('front', { label: T('fronte dei morti', 'front of the dead'), value: 0, color: '#e07030' });
   },
 
@@ -206,7 +206,7 @@ function bellDown(m, ctx) {
   d.frontX = Math.min((W - 3) * ctx.CELL, d.frontX + FRONT_PUSH);
   ctx.audio.burst(1.4, 300, 0.5, 0.5, 'lowpass', 60);
   ctx.audio.toll(38);
-  ctx.hud.goal({ it: 'campane', en: 'bells' }, 3 - d.silenced);
+  ctx.hud.goal({ it: 'campane rimaste', en: 'bells left' }, 3 - d.silenced);
   d.runners?.start();
   ctx.pickup(m.pos.clone().add(new ctx.THREE.Vector3(-1.5, 0, 0)), { kind: 'heal', amount: 45 });
   if (d.silenced >= 3) { ctx.hud.say({ it: 'Silenzio. Per ora.', en: 'Silence. For now.' }, 2200); ctx.after(1.2, (c) => c.win()); return; }
