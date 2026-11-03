@@ -51,8 +51,8 @@ export default {
   credit: T('Riproduzione: pubblico dominio', 'Reproduction: public domain'),
   intro: T('Il ponte di Ekeberg, sopra il fiordo di Oslo, al tramonto. Il cielo è diventato rosso sangue. Il ponte continua, continua, continua.', 'The Ekeberg bridge above the Oslo fjord, at sunset. The sky has turned blood red. The bridge goes on, and on, and on.'),
   rule: T('A ondate il cielo urla. Quando diventa rosso copriti le orecchie (tieni premuta l’azione), o l’urlo ti fa a pezzi. L’urlo ferma anche i mostri, ma con le mani sulle orecchie non puoi sparare, e i due uomini col cappello, gli unici calmi, si avvicinano. Arriva in fondo al ponte.', 'At intervals the sky screams. When it turns red, cover your ears (hold the action), or the scream tears you apart. The scream stops the monsters too, but with your hands on your ears you cannot shoot, and the two men in hats, the only calm ones, come closer. Reach the end of the bridge.'),
-  ruleShort: T('cielo rosso: copriti le orecchie', 'red sky: cover your ears'),
-  goal: T('Arriva in fondo al ponte e fai tacere la figura.', 'Reach the end of the bridge and silence the figure.'),
+  ruleShort: T('cielo rosso: tieni premuto ORECCHIE', 'red sky: hold EARS'),
+  goal: T('Attraversa il ponte e uccidi la figura che urla in fondo.', 'Cross the bridge and kill the screaming figure at the end.'),
   paint: '#d84a10',
   accent: '#e8701c',
   fx: { mono: 0.12, tint: [1, 0.95, 0.9], keepRed: 1, contrast: 0.42, exposure: 1.05, grain: 0.45, scratches: 0.2, dust: 0.3, flicker: 0.15, weave: 0.35, smear: 0.35, vignette: 0.55, wobble: 0.3 },
@@ -214,7 +214,7 @@ export default {
     }
     d.idx = best;
     const prog = d.idx / (d.line.length - 1);
-    ctx.hud.goal(T('metri di ponte', 'metres of bridge'), Math.max(0, Math.round((d.line.length - 1 - d.idx) * ctx.CELL)));
+    ctx.hud.goal(T('metri alla figura', 'metres to the figure'), Math.max(0, Math.round((d.line.length - 1 - d.idx) * ctx.CELL)));
 
     // hands on the ears: no shooting, muffled world, narrowed sight
     const cover = ctx.input.alt;

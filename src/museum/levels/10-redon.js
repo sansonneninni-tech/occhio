@@ -72,11 +72,11 @@ export default {
   credit: T('Riproduzione: pubblico dominio', 'Reproduction: public domain'),
   intro: T('Un foglio di carta ingiallita, ripassato a carboncino finché non resta che il nero. Da qualche parte, nel nero, qualcosa ride.', 'A sheet of yellowed paper, gone over with charcoal until only black is left. Somewhere in the black, something is laughing.'),
   rule: T('Il disegno si annerisce da solo. I tuoi colpi sono gomma: dove colpiscono la carta torna bianca per qualche secondo, e solo lì vedi i ragni. Ogni colpo serve due volte: per fare luce e per uccidere. Non uccidere il ragno che piange.', 'The drawing darkens by itself. Your shots are erasers: where they land the paper turns white for a few seconds, and only there you can see the spiders. Every shot counts twice: to make light and to kill. Do not kill the crying spider.'),
-  ruleShort: T('spara per cancellare il nero', 'shoot to erase the black'),
-  goal: T('Rimanda nel disegno 22 ragni che ridono.', 'Send 22 smiling spiders back into the drawing.'),
+  ruleShort: T('spara per fare luce · non uccidere il ragno che piange', 'shoot to make light · spare the crying spider'),
+  goal: T('Uccidi 22 ragni che ridono.', 'Kill 22 smiling spiders.'),
   paint: '#efe8d4',
   accent: '#d8cfb4',
-  fx: { mono: 1, tint: [0.94, 0.9, 0.8], keepRed: 0, contrast: 0.72, exposure: 1.15, grain: 0.85, scratches: 0.25, dust: 0.8, flicker: 0.3, weave: 0.25, smear: 0.35, vignette: 0.8 },
+  fx: { mono: 1, tint: [0.94, 0.9, 0.8], keepRed: 0, contrast: 0.72, exposure: 1.15, grain: 0.6, scratches: 0.25, dust: 0.55, flicker: 0.3, weave: 0.25, smear: 0.35, vignette: 0.8 },
   player: { hp: 100, speed: 5.4 },
   discovery: {
     title: T('Il gemello che piange', 'The twin who weeps'),
@@ -232,6 +232,7 @@ export default {
 
   update(ctx, dt) {
     const d = ctx.data, p = ctx.player;
+    ctx.hud.goal(T('ragni che ridono da uccidere', 'smiling spiders left to kill'), Math.max(0, 22 - ctx.kills));
     // the light patches fade back into charcoal
     for (let i = d.patches.length - 1; i >= 0; i--) {
       const q = d.patches[i];

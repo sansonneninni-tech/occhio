@@ -66,8 +66,8 @@ export default {
   credit: T('Riproduzione: pubblico dominio', 'Reproduction: public domain'),
   intro: T('Un salone di carnevale a Ostenda, col cielo rosa dipinto sui muri. Due bande di morti in uniforme si contendono un’aringa affumicata. L’aringa sei tu.', 'A carnival hall in Ostend, with a pink sky painted on the walls. Two gangs of dead men in uniform fight over a smoked herring. You are the herring.'),
   rule: T('Gli scheletri Rossi e i Verdi ti vogliono mordere e si odiano. Se uccidi troppi di una banda, l’altra diventa più forte: alterna i colpi. Se un Rosso e un Verde ti mordono insieme ti strappano come l’aringa. Falli incontrare: si azzuffano tra loro.', 'The Red and the Green skeletons want to bite you and hate each other. Kill too many of one gang and the other grows stronger: alternate your shots. If a Red and a Green bite you together they tear you apart like the herring. Make them meet: they brawl with each other.'),
-  ruleShort: T('alterna Rossi e Verdi', 'alternate Reds and Greens'),
-  goal: T(`Rimanda nel quadro ${NEED} Rossi e ${NEED} Verdi.`, `Send ${NEED} Reds and ${NEED} Greens back into the painting.`),
+  ruleShort: T('alterna i colpi tra Rossi e Verdi', 'alternate shots between Reds and Greens'),
+  goal: T(`Uccidi ${NEED} scheletri Rossi e ${NEED} Verdi.`, `Kill ${NEED} Red and ${NEED} Green skeletons.`),
   paint: '#c03018',
   accent: '#1f9a58',
   fx: { mono: 0.3, tint: [1, 0.93, 0.9], keepRed: 1, contrast: 0.5, exposure: 1.1, grain: 0.55, scratches: 0.3, dust: 0.4, flicker: 0.25, smear: 0.2, vignette: 0.6, wobble: 0.05 },
@@ -205,7 +205,7 @@ export default {
 
     ctx.hud.bar('r', { label: T('furia dei Rossi', 'fury of the Reds'), value: 0, color: '#d0401c' });
     ctx.hud.bar('g', { label: T('furia dei Verdi', 'fury of the Greens'), value: 0, color: '#22a060' });
-    ctx.hud.goal(T('Rossi · Verdi', 'Reds · Greens'), `0/${NEED} · 0/${NEED}`);
+    ctx.hud.goal(T('uccisi Rossi · Verdi', 'killed Reds · Greens'), `0/${NEED} · 0/${NEED}`);
     ctx.pickup(ctx.map.toWorld(14, 2), { kind: 'heal', amount: 35, color: 0xc8a040 });
     ctx.pickup(ctx.map.toWorld(14, 13), { kind: 'heal', amount: 35, color: 0xc8a040 });
   },
@@ -238,7 +238,7 @@ export default {
     const d = ctx.data, f = m.def.faction;
     if (!f) return;
     d.k[f]++;
-    ctx.hud.goal(T('Rossi · Verdi', 'Reds · Greens'), `${Math.min(NEED, d.k.r)}/${NEED} · ${Math.min(NEED, d.k.g)}/${NEED}`);
+    ctx.hud.goal(T('uccisi Rossi · Verdi', 'killed Reds · Greens'), `${Math.min(NEED, d.k.r)}/${NEED} · ${Math.min(NEED, d.k.g)}/${NEED}`);
     if (d.k.r >= NEED && d.k.g >= NEED) ctx.after(0.6, (c) => c.win());
   },
 };
