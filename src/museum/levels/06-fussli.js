@@ -42,8 +42,8 @@ export default {
   rule: T(
     'L’incubo ti salta sul petto: non puoi camminare e la vista si chiude. Premi l’azione a ritmo per RESPIRARE e buttarlo giù, poi sparagli finché è stordito. Le cavalle che spuntano dalle tende lo richiamano: zittiscile prima che nitriscano.',
     'The incubus jumps on your chest: you cannot walk and your sight closes in. Press the action in rhythm to BREATHE and throw it off, then shoot it while it is stunned. The mares peering through the curtains call it back: silence them before they neigh.'),
-  ruleShort: T('quando ti paralizza, respira: premi a ritmo', 'when it pins you, breathe: press in rhythm'),
-  goal: T('Uccidi l’incubo tre volte, finché la dormiente si sveglia.', 'Kill the incubus three times, until the sleeper wakes.'),
+  ruleShort: T('se ti salta addosso, premi RESPIRA a ritmo', 'if it jumps on you, tap BREATHE in rhythm'),
+  goal: T('Uccidi l’incubo 3 volte.', 'Kill the incubus 3 times.'),
   paint: '#c8c0b0',
   accent: '#d84a3a',
   fx: { mono: 0.1, tint: [1.05, 0.88, 0.78], contrast: 1.25, grain: 0.6, smear: 0.25, weave: 0.35, vignette: 1.0, flicker: 0.2, scratches: 0.3 },
@@ -166,7 +166,7 @@ export default {
         const d = c.data;
         d.incKills++;
         releasePlayer(c);
-        c.hud.goal(T('incubi', 'nightmares'), Math.max(0, 3 - d.incKills));
+        c.hud.goal(T('incubi rimasti', 'nightmares left'), Math.max(0, 3 - d.incKills));
         if (d.incKills >= 3) { c.hud.say(T('Si sveglia.', 'She wakes.'), 2400); c.audio.toll(90); d.wave.stop(); c.after(2, () => c.win()); return; }
         c.hud.say(T('Tornerà. Torna sempre.', 'It will come back. It always does.'), 2200);
         c.after(4.5, () => spawnIncubus(c));
@@ -180,7 +180,7 @@ export default {
 
     ctx.action({ label: T('RESPIRA', 'BREATHE') });
     ctx.hud.bar('breath', { label: T('respiro', 'breath'), value: 1, color: '#e8dcd0' });
-    ctx.hud.goal(T('incubi', 'nightmares'), 3);
+    ctx.hud.goal(T('incubi rimasti', 'nightmares left'), 3);
 
     // sleepers come at once; mares peer from the curtains
     ctx.data.wave = ctx.spawner({ kinds: [{ def: sleeper, w: 3 }], first: 3, every: 2.4, max: 6 });

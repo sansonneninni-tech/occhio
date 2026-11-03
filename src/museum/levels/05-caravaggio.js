@@ -40,8 +40,8 @@ export default {
   rule: T(
     'Non guardarla: il suo sguardo ti trasforma in pietra. Tieni premuta l’azione per alzare lo SPECCHIO: vedi alle tue spalle, al contrario, come Perseo. Solo nello specchio i colpi la feriscono.',
     'Do not look at her: her stare turns you to stone. Hold the action to raise the MIRROR: you see behind you, reversed, like Perseus. Only in the mirror do your shots wound her.'),
-  ruleShort: T('non guardarla: colpiscila nello specchio', 'don’t look at her: shoot her in the mirror'),
-  goal: T('Uccidi Medusa guardandola solo riflessa.', 'Kill Medusa, looking at her only in reflection.'),
+  ruleShort: T('tieni premuto SPECCHIO e spara al riflesso', 'hold MIRROR and shoot the reflection'),
+  goal: T('Uccidi Medusa colpendola nello specchio.', 'Kill Medusa by shooting her in the mirror.'),
   paint: '#3a5a1a',
   accent: '#9ab040',
   fx: { mono: 0.15, tint: [1.0, 0.94, 0.8], contrast: 1.35, grain: 0.55, scratches: 0.25, dust: 0.4, vignette: 0.9, flicker: 0.15 },
@@ -165,6 +165,7 @@ export default {
 
     ctx.action({ label: T('SPECCHIO', 'MIRROR') });
     ctx.hud.bar('stone', { label: T('pietra', 'stone'), value: 0, color: '#b8b4a8' });
+    ctx.hud.goal(T('vita di Medusa', 'Medusa’s life'), '100%');
     ctx.pickup(ctx.map.toWorld(2, 7), { kind: 'heal', amount: 35 });
     ctx.pickup(ctx.map.toWorld(12, 7), { kind: 'heal', amount: 35 });
     ctx.after(1.2, () => ctx.hud.say(T('Non guardarla. Usa lo specchio.', 'Do not look at her. Use the mirror.'), 2600));
@@ -218,6 +219,7 @@ export default {
     p.speedMul = (1 - d.stone * 0.7) * (mirror ? 0.7 : 1);
     p.lookMul = 1 - d.stone * 0.55;
     ctx.hud.bar('stone', { value: d.stone });
+    ctx.hud.goal(T('vita di Medusa', 'Medusa’s life'), `${Math.ceil(k * 100)}%`);
     if (looking && Math.random() < dt * 0.6) ctx.audio.heart();
   },
 

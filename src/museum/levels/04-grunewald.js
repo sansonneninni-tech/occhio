@@ -54,8 +54,8 @@ export default {
   rule: T(
     'Il contagio sale con il pus e vicino ai malati. Più sei malato, più vedi demoni finti: non sanguinano e ti fanno sprecare colpi. Guarisci solo nelle nicchie con la croce a T, ma bevendo resti fermo. Gli sportelli dell’altare si aprono a ogni ondata.',
     'The contagion rises with pus and near the sick. The sicker you are, the more false demons you see: they do not bleed and they waste your shots. You heal only in the niches of the T cross, but while you drink you cannot move. The altar wings open with every wave.'),
-  ruleShort: T('il contagio ti fa vedere demoni finti', 'the contagion shows you false demons'),
-  goal: T('Sopravvivi alle tre aperture dell’altare.', 'Survive the three openings of the altar.'),
+  ruleShort: T('spara ai demoni che sanguinano · bevi alla croce a T', 'shoot the demons that bleed · drink at the T cross'),
+  goal: T('Rimanda nel quadro 42 demoni veri.', 'Send 42 real demons back into the painting.'),
   paint: '#6a7a20',
   accent: '#a8c040',
   fx: { mono: 0.35, tint: [0.92, 1.0, 0.78], contrast: 1.2, grain: 0.7, scratches: 0.45, dust: 0.5, flicker: 0.25, weave: 0.2, vignette: 0.9 },
