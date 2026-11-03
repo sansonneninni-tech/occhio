@@ -1,4 +1,5 @@
 import './style.css';
+import './museum-hero.css';
 import { h } from './core/dom.js';
 import { t, getLang, setLang, onLang, UI } from './core/i18n.js';
 import { store } from './core/store.js';
@@ -107,19 +108,49 @@ function museumHero() {
   const best = store.best(g.id);
   let prog = { max: 0, restored: [] };
   try { prog = { ...prog, ...JSON.parse(localStorage.getItem('occhio:museo2') || '{}') }; } catch {}
-  const eyes = Array.from({ length: 7 }, (_, i) => h('i', { style: { left: `${8 + i * 13 + (i % 2) * 4}%`, top: `${20 + ((i * 37) % 55)}%`, animationDelay: `${(i * 0.7) % 4}s` } }));
-  return h('a', { class: 'mz-hero', href: `#/play/${g.id}` },
-    h('div', { class: 'mz-hero-eyes', 'aria-hidden': 'true' }, eyes),
-    h('div', { class: 'mz-hero-art', html: g.thumb() }),
-    h('div', { class: 'mz-hero-body' },
-      h('small', {}, t('mzKicker')),
-      h('h2', {}, t(g.title)),
-      h('p', {}, t(g.tagline)),
-      h('div', { class: 'mz-hero-foot' },
-        h('span', { class: 'mz-hero-cta' }, t('mzEnter'), h('span', { html: '&rarr;' })),
-        h('span', { class: 'mz-hero-stat' }, h('b', {}, `${prog.restored.length}/15`), ' ', t('mzHalls')),
-        best ? h('span', { class: 'mz-hero-stat' }, h('b', {}, best.score.toLocaleString()), ' ', t('best')) : null),
-      h('em', { class: 'mz-hero-warn' }, t('mzWarn'))));
+  const done = prog.restored.length;
+  // cornice di lampadine attorno all'insegna: 4 lati
+  const bulbs = (n, side) => h('div', { class: `mh-bulbs mh-bulbs--${side}`, 'aria-hidden': 'true' }, Array.from({ length: n }, (_, i) => h('i', { style: { '--k': i % 3 } })));
+  // 15 lampadine = 15 quadri: accese quelle già attraversate
+  const track = h('div', { class: 'mh-progress', role: 'img', 'aria-label': `${done}/15 ${t('mzHalls')}` },
+    Array.from({ length: 15 }, (_, i) => h('i', { class: prog.restored.includes(i + 1) ? 'on' : '' })));
+  return h('a', { class: 'mh', href: `#/play/${g.id}` },
+    h('div', { class: 'mh-awning', 'aria-hidden': 'true' }),
+    h('div', { class: 'mh-inner' },
+      h('div', { class: 'mh-front' },
+        h('div', { class: 'mh-sign' },
+          bulbs(16, 'top'), bulbs(16, 'bottom'), bulbs(4, 'left'), bulbs(4, 'right'),
+          h('span', { class: 'mh-plaque' }, t('mzKicker')),
+          h('h2', { class: 'mh-title' }, ...titleLines(t(g.title)))),
+        h('p', { class: 'mh-tag' }, t(g.tagline)),
+        h('div', { class: 'mh-foot' },
+          h('span', { class: 'mh-ticket' },
+            h('small', {}, t('mzAdmit')),
+            h('b', {}, t('mzEnter')),
+            h('em', {}, t('mzRide'))),
+          h('div', { class: 'mh-score' },
+            track,
+            h('p', {}, h('b', {}, `${done}/15`), ' ', t('mzHalls'), best ? [h('span', { class: 'mh-sep' }), h('b', {}, best.score.toLocaleString()), ' ', t('best')] : null))),
+        h('p', { class: 'mh-warn' }, t('mzWarn'))),
+      h('div', { class: 'mh-door', 'aria-hidden': 'true' },
+        h('div', { class: 'mh-frame' }, h('img', { src: '/home/saturno.webp', alt: '', width: 640, height: 754, decoding: 'async' })),
+        h('div', { class: 'mh-rails', html: railsSvg() }))));
+}
+
+// "Il Museo Maledetto" -> riga piccola + parola grande, come le insegne da baraccone
+function titleLines(title) {
+  const words = title.split(' ');
+  const last = words.pop();
+  return [h('span', { class: 'mh-title-s' }, words.join(' ')), h('span', { class: 'mh-title-l' }, last)];
+}
+
+function railsSvg() {
+  const ties = Array.from({ length: 7 }, (_, i) => {
+    const y = 6 + i * i * 2.1 + i * 4;
+    const w = 52 + y * 1.3;
+    return `<rect x="${150 - w / 2}" y="${y}" width="${w}" height="${3 + i * 0.9}" fill="#5a3a26"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 300 150" preserveAspectRatio="none"><g>${ties}</g><path d="M122 0 L28 150 M178 0 L272 150" stroke="#cfc4ae" stroke-width="3.5" fill="none"/><path d="M122 0 L28 150 M178 0 L272 150" stroke="#000" stroke-width="1" fill="none" transform="translate(2 0)" opacity=".5"/></svg>`;
 }
 
 function card(g, idx) {

@@ -346,32 +346,7 @@ a { color: inherit; }
 @media (hover: none) { .keys-hint { display: none; } }
 
 /* ================= Il Museo Maledetto ================= */
-.mz-hero {
-  --blood: #B3001B;
-  position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: stretch;
-  margin: 0 var(--gutter) 28px; min-height: 340px; border: var(--line); border-radius: var(--r); overflow: hidden;
-  background: radial-gradient(120% 90% at 30% 60%, #2a0a0a 0%, #0b0807 60%), #0b0807; color: #e8dcc0;
-  text-decoration: none; box-shadow: var(--shadow-lg); isolation: isolate;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
-}
-.mz-hero:hover { transform: translate(-3px, -3px); box-shadow: 11px 11px 0 var(--ink); }
-.mz-hero:active { transform: translate(2px, 2px); box-shadow: 4px 4px 0 var(--ink); }
-.mz-hero-art { position: relative; min-height: 220px; }
-.mz-hero-art svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.mz-hero-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 55%, #0b0807); }
-.mz-hero-body { position: relative; z-index: 2; padding: clamp(22px, 4vw, 44px); display: flex; flex-direction: column; justify-content: center; gap: 12px; }
-.mz-hero-body small { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #ff5a4a; font-weight: 700; }
-.mz-hero-body h2 { margin: 0; font-family: var(--fell); font-weight: 400; font-style: italic; font-size: clamp(40px, 6.2vw, 84px); line-height: .9; letter-spacing: -.01em; color: #f4ecd8; text-shadow: 0 0 30px rgba(179, 0, 27, .55); }
-.mz-hero-body p { margin: 0; max-width: 46ch; font-size: 16px; line-height: 1.45; color: #cbbd9f; }
-.mz-hero-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 6px; }
-.mz-hero-cta { display: inline-flex; gap: 10px; align-items: center; padding: 13px 20px; border-radius: 999px; background: var(--blood); color: #f4ecd8; font-weight: 800; border: 2px solid #f4ecd8; transition: transform .2s var(--ease); }
-.mz-hero:hover .mz-hero-cta { transform: translateX(4px); }
-.mz-hero-stat { font-family: var(--mono); font-size: 12px; color: #a89a7e; }
-.mz-hero-stat b { color: #f4ecd8; font-size: 15px; }
-.mz-hero-warn { font-family: var(--mono); font-style: normal; font-size: 11px; color: #7d7058; }
-.mz-hero-eyes { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-.mz-hero-eyes i { position: absolute; width: 14px; height: 6px; border-radius: 50%; background: #ff2020; box-shadow: 22px 0 0 #ff2020, 0 0 14px 2px rgba(255, 32, 32, .6), 22px 0 14px 2px rgba(255, 32, 32, .6); opacity: 0; animation: mz-blink 6s infinite; }
-@keyframes mz-blink { 0%, 62%, 100% { opacity: 0; transform: scaleY(.2); } 66%, 86% { opacity: .9; transform: scaleY(1); } 90% { opacity: 0; transform: scaleY(.1); } }
+/* banner in home: vedi museum-hero.css */
 
 .play--museum { background: #050303; }
 .play--museum .play-top { background: #0b0807; color: #e8dcc0; border-bottom: 2px solid #2a1c14; }

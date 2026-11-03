@@ -1,0 +1,144 @@
+/* Banner del Museo Maledetto in home: facciata di un tunnel degli orrori da luna park.
+   Insegna a lampadine in caratteri da baraccone, tendone a strisce, ingresso nel quadro di Goya. */
+.mh {
+  --soot: #120c09;
+  --plank: #22160f;
+  --oxblood: #5a0d12;
+  --red: #c3261c;
+  --bone: #efe3c8;
+  --bulb: #ffc94a;
+  --gilt: #b8893a;
+  position: relative; display: block; margin: 0 var(--gutter) 28px;
+  border: var(--line); border-radius: var(--r); overflow: hidden; isolation: isolate;
+  color: var(--bone); text-decoration: none; box-shadow: var(--shadow-lg);
+  /* assi di legno verniciate */
+  background:
+    repeating-linear-gradient(90deg, transparent 0 118px, rgba(0, 0, 0, .55) 118px 121px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .015) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, var(--plank), var(--soot) 75%);
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+.mh:hover { transform: translate(-3px, -3px); box-shadow: 11px 11px 0 var(--ink); }
+.mh:active { transform: translate(2px, 2px); box-shadow: 4px 4px 0 var(--ink); }
+.mh:focus-visible { outline: 3px solid var(--bulb); outline-offset: 4px; }
+
+/* tendone a strisce con il bordo a smerli */
+.mh-awning {
+  height: 34px;
+  background: repeating-linear-gradient(90deg, var(--red) 0 44px, var(--bone) 44px 88px);
+  -webkit-mask: radial-gradient(22px 12px at 22px 22px, #000 98%, transparent) 0 0 / 44px 34px repeat-x, linear-gradient(#000, #000) 0 0 / 100% 22px no-repeat;
+  mask: radial-gradient(22px 12px at 22px 22px, #000 98%, transparent) 0 0 / 44px 34px repeat-x, linear-gradient(#000, #000) 0 0 / 100% 22px no-repeat;
+  filter: saturate(.85);
+}
+
+.mh-inner {
+  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(220px, .9fr); gap: clamp(20px, 4vw, 56px);
+  padding: 18px clamp(20px, 4vw, 48px) 0; align-items: end;
+}
+.mh-front { display: flex; flex-direction: column; gap: 16px; padding-bottom: clamp(22px, 3vw, 36px); min-width: 0; }
+
+/* insegna */
+.mh-sign {
+  position: relative; align-self: start; padding: 34px clamp(26px, 3.4vw, 44px) 30px;
+  background: var(--oxblood); border: 4px solid #1d0405; border-radius: 6px;
+  box-shadow: inset 0 0 0 3px var(--gilt), inset 0 0 40px rgba(0, 0, 0, .55), 0 10px 0 -2px #000;
+  transform: rotate(-1.2deg);
+}
+.mh-plaque {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%) rotate(2deg); white-space: nowrap;
+  padding: 4px 12px; background: var(--bone); color: #1d0405; border: 2px solid #1d0405;
+  font-family: var(--fell); font-style: italic; font-size: 15px; line-height: 1.2;
+}
+.mh-title { margin: 0; display: flex; flex-direction: column; font-family: 'Rye', var(--fell); font-weight: 400; line-height: .9; color: var(--bone); }
+.mh-title-s { font-size: clamp(20px, 2.4vw, 30px); letter-spacing: .06em; color: var(--bulb); text-shadow: 2px 2px 0 #1d0405; }
+.mh-title-l {
+  font-size: clamp(40px, 6.6vw, 88px); letter-spacing: .01em;
+  text-shadow: 3px 3px 0 var(--red), 6px 6px 0 #1d0405;
+}
+
+/* lampadine: si accendono a rincorsa, come sulle giostre */
+.mh-bulbs { position: absolute; display: flex; justify-content: space-between; pointer-events: none; }
+.mh-bulbs--top { top: 9px; left: 14px; right: 14px; }
+.mh-bulbs--bottom { bottom: 9px; left: 14px; right: 14px; }
+.mh-bulbs--left { left: 9px; top: 30px; bottom: 30px; flex-direction: column; }
+.mh-bulbs--right { right: 9px; top: 30px; bottom: 30px; flex-direction: column; }
+.mh-bulbs i {
+  width: 9px; height: 9px; border-radius: 50%; background: #6b4a1c;
+  animation: mh-chase 1.2s steps(1) infinite; animation-delay: calc(var(--k) * .4s);
+}
+@keyframes mh-chase {
+  0% { background: #fff2c4; box-shadow: 0 0 6px 2px var(--bulb), 0 0 16px 3px rgba(255, 170, 40, .45); }
+  33.3%, 100% { background: #6b4a1c; box-shadow: none; }
+}
+/* una lampadina fulminata che sfarfalla */
+.mh-bulbs--top i:nth-child(11) { animation: mh-dead 5s infinite; }
+@keyframes mh-dead { 0%, 91%, 95%, 100% { background: #3a2a14; box-shadow: none; } 92%, 94% { background: #fff2c4; box-shadow: 0 0 8px 2px var(--bulb); } }
+
+.mh-tag { margin: 6px 0 0; max-width: 40ch; font-family: var(--fell); font-style: italic; font-size: clamp(18px, 1.7vw, 22px); line-height: 1.35; color: #d9cbaa; }
+
+.mh-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 26px; }
+
+/* il bottone è un biglietto strappato */
+.mh-ticket {
+  position: relative; display: inline-grid; justify-items: start; gap: 2px;
+  padding: 10px 26px 11px 22px; color: #1d0405; background: var(--bulb);
+  -webkit-mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  transform: rotate(1.5deg); transition: transform .2s var(--ease), background .2s;
+  filter: drop-shadow(4px 4px 0 #000);
+}
+.mh-ticket::before { content: ''; position: absolute; inset: 4px 10px; border: 1.5px dashed rgba(29, 4, 5, .55); pointer-events: none; }
+.mh-ticket small { font-family: var(--fell); font-style: italic; font-size: 13px; }
+.mh-ticket b { font-family: 'Rye', var(--fell); font-weight: 400; font-size: clamp(20px, 2vw, 25px); line-height: 1; }
+.mh-ticket em { font-family: var(--display); font-style: normal; font-weight: 700; font-size: 12px; }
+.mh:hover .mh-ticket { transform: rotate(-1deg) scale(1.04); background: #ffd76a; }
+
+.mh-score { display: grid; gap: 8px; }
+.mh-score p { margin: 0; font-family: var(--display); font-size: 13px; color: #a8987a; }
+.mh-score b { font-weight: 800; font-size: 16px; color: var(--bone); }
+.mh-sep { display: inline-block; width: 18px; }
+.mh-progress { display: flex; gap: 5px; }
+.mh-progress i { width: 11px; height: 11px; border-radius: 50%; background: #3a2a14; box-shadow: inset 0 0 0 1.5px #5c4422; }
+.mh-progress i.on { background: #fff2c4; box-shadow: 0 0 6px 1px var(--bulb); }
+
+.mh-warn { margin: 0; font-family: var(--display); font-size: 12px; color: #8a7a5e; max-width: 60ch; }
+
+/* ingresso: il quadro di Goya fa da porta, i binari ci entrano dentro */
+.mh-door { position: relative; display: flex; flex-direction: column; align-items: center; align-self: stretch; justify-content: flex-end; }
+.mh-frame {
+  position: relative; width: min(100%, 370px); aspect-ratio: 640 / 690; overflow: hidden;
+  border: 14px solid var(--gilt); border-bottom-width: 0;
+  border-image: linear-gradient(135deg, #e0b866, #7a5520 40%, #d4a650 60%, #5e3e14) 14;
+  box-shadow: 0 0 0 3px #000, inset 0 0 50px #000;
+  background: #000;
+}
+.mh-frame img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; filter: contrast(1.12) brightness(.82) sepia(.15); transition: transform 1.2s var(--ease), filter .6s; }
+.mh-frame::after { content: ''; position: absolute; inset: 0; background: radial-gradient(90% 70% at 50% 30%, transparent 40%, rgba(0, 0, 0, .75)), linear-gradient(180deg, transparent 72%, #000); }
+/* le strisce di gomma all'ingresso del tunnel */
+.mh-frame::before {
+  content: ''; position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: 42%;
+  background: repeating-linear-gradient(90deg, rgba(8, 5, 4, .92) 0 21px, rgba(0, 0, 0, .35) 21px 23px);
+  transform-origin: top; transition: transform .5s var(--ease);
+}
+.mh:hover .mh-frame::before { transform: perspective(300px) rotateX(-18deg); }
+.mh:hover .mh-frame img { transform: scale(1.06); filter: contrast(1.2) brightness(.95) sepia(.1); }
+.mh-rails { width: 100%; height: 60px; margin-top: -1px; }
+.mh-rails svg { display: block; width: 100%; height: 100%; }
+
+@media (max-width: 860px) {
+  .mh-inner { grid-template-columns: 1fr; padding-top: 22px; }
+  .mh-door { order: -1; }
+  .mh-frame { width: min(100%, 300px); aspect-ratio: 4 / 3; }
+  .mh-rails { height: 44px; }
+  .mh-frame::before { height: 28%; }
+  .mh-front { padding-bottom: 24px; }
+  .mh-sign { align-self: stretch; }
+}
+@media (max-width: 420px) {
+  .mh-bulbs--top i:nth-child(n+11), .mh-bulbs--bottom i:nth-child(n+11) { display: none; }
+  .mh-plaque { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mh-bulbs i, .mh-bulbs--top i:nth-child(11) { animation: none; background: #fff2c4; box-shadow: 0 0 6px 2px var(--bulb); }
+  .mh, .mh-ticket, .mh-frame img { transition: none; }
+}
