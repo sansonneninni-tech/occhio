@@ -24,7 +24,7 @@ document.documentElement.lang = lang;
 
 export const UI = {
   enterTitle: { it: 'Allena l’occhio.', en: 'Train your eye.' },
-  enterSub: { it: '15 giochi d’azione che ti lasciano un’opera, più un museo maledetto da 40 sale. Scrivi un nome e sfida i record.', en: '15 action games that leave you an artwork, plus a cursed museum with 40 halls. Pick a name and chase the records.' },
+  enterSub: { it: '15 giochi d’azione che ti lasciano un’opera, più un museo maledetto da 15 quadri. Scrivi un nome e sfida i record.', en: '15 action games that leave you an artwork, plus a cursed museum of 15 paintings. Pick a name and chase the records.' },
   namePh: { it: 'Il tuo nome', en: 'Your name' },
   play: { it: 'Gioca', en: 'Play' },
   hello: { it: 'Ciao, {name}', en: 'Hi, {name}' },
@@ -35,10 +35,10 @@ export const UI = {
   '3d': { it: '3D', en: '3D' },
   arte: { it: 'Arte', en: 'Art' },
   museo: { it: 'Museo', en: 'Museum' },
-  mzKicker: { it: 'Il gioco grande · 40 sale', en: 'The big game · 40 halls' },
+  mzKicker: { it: 'Il gioco grande · 15 quadri, 15 incubi', en: 'The big game · 15 paintings, 15 nightmares' },
   mzEnter: { it: 'Entra nel museo', en: 'Enter the museum' },
-  mzHalls: { it: 'sale restaurate', en: 'halls restored' },
-  mzWarn: { it: 'Contiene immagini inquietanti. Cuffie consigliate.', en: 'Contains unsettling imagery. Headphones recommended.' },
+  mzHalls: { it: 'quadri attraversati', en: 'paintings crossed' },
+  mzWarn: { it: 'Contiene immagini molto disturbanti. Vietato ai minori di 16 anni. Cuffie consigliate.', en: 'Contains deeply disturbing imagery. Not for under 16s. Headphones recommended.' },
   games: { it: 'giochi', en: 'games' },
   best: { it: 'Record', en: 'Best' },
   notPlayed: { it: 'Mai giocato', en: 'Not played' },
