@@ -1,73 +1,41 @@
-// "Il Museo Maledetto": the big game. 40 halls, one unsettling painting each.
+// "Il Museo Maledetto": 15 levels, one real painting and one artist each.
+// A run is a descent: few lives for the whole game, every level has its own map and its own rule.
+// This file is the shell (menus, HUD, lives, controls). The engine is core/engine.js, levels are in levels/.
 import { h } from '../core/dom.js';
 import { store } from '../core/store.js';
 import { download } from '../core/export.js';
 import { vibrate } from '../core/fx.js';
-import { LEVELS, difficulty } from './levels.js';
-import { paintingArt } from './art.js';
-import { createEngine } from './engine.js';
+import { LEVELS, PLAN, loadExample } from './levels/index.js';
 
-const KEY = 'occhio:museum';
+const KEY = 'occhio:museo2';
+const LIVES = 3, MAX_LIVES = 5;
 const loadProg = () => { try { return { max: 0, restored: [], ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { max: 0, restored: [] }; } };
 const saveProg = (p) => { try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {} };
+const ROMAN = (n) => { const v = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]; let s = ''; for (const [k, r] of v) while (n >= k) { s += r; n -= k; } return s; };
 
-const ROMAN = (n) => { const v = [[40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]; let s = ''; for (const [k, r] of v) while (n >= k) { s += r; n -= k; } return s; };
-
-const ABIL = {
-  melee: { it: 'Artigli', en: 'Claws', d: { it: 'ti colpisce da vicino', en: 'strikes up close' } },
-  swarm: { it: 'Sciame', en: 'Swarm', d: { it: 'arrivano in tanti, più piccoli', en: 'many, smaller, faster' } },
-  flight: { it: 'Volo', en: 'Flight', d: { it: 'ondeggia, difficile da centrare', en: 'weaves, hard to hit' } },
-  charge: { it: 'Carica', en: 'Charge', d: { it: 'si ferma, poi si lancia', en: 'freezes, then lunges' } },
-  shoot: { it: 'Sputo', en: 'Spit', d: { it: 'lancia colore a distanza', en: 'throws paint from afar' } },
-  split: { it: 'Scissione', en: 'Split', d: { it: 'muore e diventa due', en: 'dies and becomes two' } },
-  heal: { it: 'Restauro', en: 'Mend', d: { it: 'guarisce i vicini', en: 'heals its kin' } },
-  teleport: { it: 'Salto', en: 'Blink', d: { it: 'ti compare accanto', en: 'appears beside you' } },
-  gaze: { it: 'Sguardo', en: 'Gaze', d: { it: 'se lo guardi ti svuota e ti rallenta', en: 'its stare drains and slows you' } },
-  invisible: { it: 'Velatura', en: 'Glaze', d: { it: 'quasi invisibile da lontano', en: 'nearly invisible from afar' } },
-  devour: { it: 'Divora', en: 'Devour', d: { it: 'mordendo cresce e guarisce', en: 'grows and heals as it bites' } },
-  summon: { it: 'Evoca', en: 'Summon', d: { it: 'genera piccoli dannati', en: 'spawns little damned' } },
-  scream: { it: 'Urlo', en: 'Scream', d: { it: 'strappa la vista e ti spinge', en: 'tears your sight, pushes you' } },
-  web: { it: 'Ragnatela', en: 'Web', d: { it: 'ti invischia e rallenta', en: 'snares and slows you' } },
-};
 const WHISPERS = {
-  it: ['riportami dentro', 'la cornice è fredda', 'ti stavamo guardando', 'il colore brucia', 'non uscire dalla sala', 'resta. resta. resta.', 'chi ti ha dipinto?', 'anche tu avrai una cornice', 'senti la vernice che respira?', 'non guardarlo negli occhi'],
-  en: ['put me back inside', 'the frame is cold', 'we were watching you', 'the paint burns', 'do not leave the hall', 'stay. stay. stay.', 'who painted you?', 'you will have a frame too', 'can you hear the paint breathe?', 'do not meet its eyes'],
+  it: ['non guardare la cornice', 'ti abbiamo dipinto mentre dormivi', 'la vernice è ancora calda', 'chi ti ha messo qui?', 'resta. resta. resta.', 'anche tu marcirai a olio', 'ascolta la tela che respira', 'non uscirai dal quadro'],
+  en: ['do not look at the frame', 'we painted you while you slept', 'the paint is still warm', 'who hung you here?', 'stay. stay. stay.', 'you too will rot in oil', 'listen to the canvas breathe', 'you will not leave the painting'],
 };
 
-function threat(i) { return Math.min(5, 1 + Math.floor(i / 8)); }
-
-export function restoredPainting(idx, name, lang) {
-  const L = LEVELS[idx];
-  const W = 960, H = 720, PL = 150;
-  const c = document.createElement('canvas'); c.width = W + 80; c.height = H + 80 + PL;
+function souvenir(lv, imgEl, name, lang, st) {
+  const iw = imgEl.naturalWidth || imgEl.width, ih = imgEl.naturalHeight || imgEl.height;
+  const k = Math.min(1000 / iw, 900 / ih);
+  const W = Math.round(iw * k), H = Math.round(ih * k), PL = 170;
+  const c = document.createElement('canvas'); c.width = W + 120; c.height = H + 120 + PL;
   const g = c.getContext('2d');
-  g.fillStyle = '#0b0807'; g.fillRect(0, 0, c.width, c.height);
-  g.fillStyle = '#5a4010'; g.fillRect(16, 16, W + 48, H + 48);
-  g.fillStyle = '#c8a040'; g.fillRect(28, 28, W + 24, H + 24);
-  g.drawImage(paintingArt(L, idx, W, H), 40, 40);
-  g.fillStyle = '#c8a040'; g.fillRect(c.width / 2 - 300, H + 100, 600, 110);
-  g.fillStyle = '#1a1208'; g.textAlign = 'center';
-  g.font = '700 30px Archivo, sans-serif'; g.fillText(L.title[lang] || L.title.it, c.width / 2, H + 145);
-  g.font = '500 20px "JetBrains Mono", monospace'; g.fillText(`${L.artist} · ${L.year}`, c.width / 2, H + 175);
-  g.font = '500 15px "JetBrains Mono", monospace';
-  g.fillText((lang === 'en' ? 'restored by ' : 'restaurato da ') + (name || '—') + ' · OCCHIO · ' + (lang === 'en' ? 'procedural homage' : 'omaggio procedurale'), c.width / 2, H + 198);
-  return c;
-}
-function gallerySheet(list, name, lang) {
-  const cols = Math.min(4, Math.max(1, list.length)), rows = Math.ceil(list.length / cols);
-  const cw = 360, ch = 300, pad = 30;
-  const c = document.createElement('canvas'); c.width = cols * cw + pad * 2; c.height = rows * ch + pad * 2 + 90;
-  const g = c.getContext('2d');
-  g.fillStyle = '#0b0807'; g.fillRect(0, 0, c.width, c.height);
-  g.fillStyle = '#e8dcc0'; g.font = '900 44px Archivo, sans-serif'; g.fillText(lang === 'en' ? 'THE CURSED MUSEUM' : 'IL MUSEO MALEDETTO', pad, 64);
-  g.font = '500 16px "JetBrains Mono", monospace'; g.fillText(`${name || '—'} · ${list.length} ${lang === 'en' ? 'restored paintings' : 'quadri restaurati'}`, pad, 88);
-  list.forEach((idx, k) => {
-    const x = pad + (k % cols) * cw, y = 110 + Math.floor(k / cols) * ch;
-    g.fillStyle = '#c8a040'; g.fillRect(x, y, cw - 20, 230);
-    g.drawImage(paintingArt(LEVELS[idx], idx, 320, 240), x + 10, y + 10, cw - 40, 210);
-    g.fillStyle = '#e8dcc0'; g.font = '700 15px Archivo, sans-serif'; g.fillText(`${ROMAN(idx + 1)} · ${(LEVELS[idx].title[lang] || LEVELS[idx].title.it).slice(0, 38)}`, x, y + 256);
-    g.font = '500 12px "JetBrains Mono", monospace'; g.fillText(`${LEVELS[idx].artist} · ${LEVELS[idx].year}`, x, y + 276);
-  });
+  g.fillStyle = '#080605'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#3a2810'; g.fillRect(24, 24, W + 72, H + 72);
+  g.fillStyle = '#8a6a28'; g.fillRect(40, 40, W + 40, H + 40);
+  g.drawImage(imgEl, 60, 60, W, H);
+  lv.souvenir?.(g, { x: 60, y: 60, w: W, h: H, stats: st, lang });
+  g.fillStyle = '#c8a040'; g.fillRect(c.width / 2 - 320, H + 140, 640, 120);
+  g.fillStyle = '#14100a'; g.textAlign = 'center';
+  const T = (o) => (o?.[lang] ?? o?.it ?? '');
+  g.font = 'italic 30px "IM Fell English", serif'; g.fillText(T(lv.title).slice(0, 44), c.width / 2, H + 185);
+  g.font = '600 18px "JetBrains Mono", monospace'; g.fillText(`${lv.artist} · ${lv.year}`, c.width / 2, H + 214);
+  g.font = '500 14px "JetBrains Mono", monospace';
+  g.fillText(`${lang === 'en' ? 'crossed alive by' : 'attraversato vivo da'} ${name || '—'} · ${st?.kills ?? 0} ${lang === 'en' ? 'souls' : 'anime'} · OCCHIO`, c.width / 2, H + 240);
   return c;
 }
 
@@ -76,422 +44,386 @@ export default {
   cat: 'museo',
   featured: true,
   title: { it: 'Il Museo Maledetto', en: 'The Cursed Museum' },
-  tagline: { it: 'Di notte i soggetti escono dai quadri. Rimandali dentro, sala dopo sala. 40 opere, 40 incubi.', en: 'At night the subjects crawl out of the paintings. Send them back, hall after hall. 40 works, 40 nightmares.' },
+  tagline: { it: 'Quindici quadri veri, quindici artisti, quindici incubi. Attraversali tutti con tre vite.', en: 'Fifteen real paintings, fifteen artists, fifteen nightmares. Cross them all with three lives.' },
   how: {
-    it: '40 livelli: ogni livello è una sala dedicata a un quadro inquietante (dal 1400 al 1900): i suoi soggetti sono diventati mostri, ognuno con poteri suoi.|Sparagli con il revolver a olio, caricato con il colore della sala: quando muoiono tornano volando nella cornice vuota più vicina. Svuota la sala e il quadro è restaurato.|PC: clicca per bloccare il mouse, WASD per muoverti, mouse per guardare e sparare, R per ricaricare il revolver (6 colpi), E per la trementina (bomba), Esc pausa. Telefono: joystick a sinistra, trascina a destra per guardare, tasti FUOCO e BOMBA.|Ogni 5 livelli c’è un mostro enorme e si sblocca un punto di partenza. Arrivare al livello 25 è un’impresa. Il 40 è da bestia.',
-    en: '40 levels: each level is a hall devoted to an unsettling painting (1400s to 1900s): its subjects have become monsters, each with its own powers.|Shoot them with the oil revolver, loaded with the hall’s paint: when they die they fly back into the nearest empty frame. Clear the hall and the painting is restored.|PC: click to lock the mouse, WASD to move, mouse to look and shoot, R to reload the revolver (6 shots), E for turpentine (bomb), Esc to pause. Phone: joystick on the left, drag on the right to look, FIRE and BOMB buttons.|Every 5 levels a huge monster waits and a new starting point unlocks. Reaching level 25 is a feat. Level 40 is hellish.',
+    it: 'Ogni livello è dentro un quadro vero, con la sua mappa, i suoi mostri ritagliati dalla tela e una regola tutta sua, spiegata prima di entrare.|Hai tre vite per tutta la discesa. Se muori riparti dallo stesso livello con una vita in meno. Finite le vite, si ricomincia dal primo quadro.|PC: clicca per bloccare il mouse, WASD per muoverti, mouse per guardare, clic sinistro per sparare, R per ricaricare il revolver (6 colpi), tasto destro o Spazio per l’azione del livello, Esc pausa. Telefono: joystick a sinistra, trascina a destra per guardare, tasti FUOCO e azione.|Alla fine di ogni livello scopri qualcosa sull’artista e ti porti a casa il quadro attraversato.',
+    en: 'Every level takes place inside a real painting, with its own map, monsters cut out of the canvas and a rule of its own, explained before you go in.|You have three lives for the whole descent. If you die you restart the same level with one life less. Out of lives, you start again from the first painting.|PC: click to lock the mouse, WASD to move, mouse to look, left click to shoot, R to reload the revolver (6 shots), right click or Space for the level action, Esc to pause. Phone: joystick on the left, drag on the right to look, FIRE and action buttons.|At the end of each level you discover something about the artist and take home the painting you crossed.',
   },
-  thumb: () => `<svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><rect width="160" height="100" fill="#0b0807"/><path d="M0 100 L60 52 L100 52 L160 100Z" fill="#1a120c"/><path d="M0 0 L60 40 L100 40 L160 0Z" fill="#060403"/><rect x="60" y="40" width="40" height="12" fill="#2a1c14"/><rect x="66" y="42" width="28" height="8" fill="#c8a040"/><rect x="68" y="43" width="24" height="6" fill="#050303"/><circle cx="76" cy="46" r="1.6" fill="#ff2020"/><circle cx="84" cy="46" r="1.6" fill="#ff2020"/><rect x="18" y="20" width="22" height="30" fill="#c8a040" transform="skewY(18)"/><rect x="21" y="23" width="16" height="24" fill="#6a1a10" transform="skewY(18)"/><rect x="120" y="44" width="22" height="30" fill="#c8a040" transform="skewY(-18)"/><rect x="123" y="47" width="16" height="24" fill="#050303" transform="skewY(-18)"/></svg>`,
+  thumb: () => `<svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><defs><filter id="mzg"><feTurbulence baseFrequency=".9" numOctaves="2"/><feColorMatrix values="0 0 0 0 .1  0 0 0 0 .08  0 0 0 0 .06  0 0 0 .5 0"/><feComposite in2="SourceGraphic" operator="in"/></filter></defs><rect width="160" height="100" fill="#0b0807"/><rect x="48" y="14" width="64" height="72" fill="#6a4a18"/><rect x="53" y="19" width="54" height="62" fill="#1a0e0a"/><ellipse cx="80" cy="44" rx="13" ry="17" fill="#cfc2a8"/><ellipse cx="74" cy="41" rx="3" ry="4" fill="#050303"/><ellipse cx="86" cy="41" rx="3" ry="4" fill="#050303"/><ellipse cx="80" cy="54" rx="5" ry="7" fill="#050303"/><path d="M60 81 C66 64 94 64 100 81Z" fill="#4a1a5a"/><rect width="160" height="100" filter="url(#mzg)"/></svg>`,
 
-  mount(stage, api) {
+  async mount(stage, api) {
     const lang = () => (api.lang === 'en' ? 'en' : 'it');
-    const L = (o) => o[lang()] ?? o.it;
+    const L = (o) => (o == null ? '' : typeof o === 'string' ? o : o[lang()] ?? o.it);
     const play = stage.closest('.play');
     play?.classList.add('play--museum');
     stage.classList.add('g-stage--museum');
     api.onCleanup(() => play?.classList.remove('play--museum'));
+    // three.js and the engine load only when you enter the museum
+    const [{ createEngine }, { loadImage }] = await Promise.all([import('./core/engine.js'), import('./core/art.js')]);
+    const exampleMode = /esempio/.test(location.hash) || /esempio/.test(location.search);
 
+    // ---------- DOM ----------
     const canvas = h('canvas', { class: 'mz-canvas' });
     const hpFill = h('i'), hpNum = h('b', {}, '100');
-    const bombsEl = h('span', { class: 'mz-bombs' });
     const ammoDots = h('span', { class: 'mz-ammo-dots' });
-    const ammoEl = h('button', { class: 'mz-ammo', type: 'button', 'aria-label': 'reload' }, h('small', {}, L({ it: 'colpi', en: 'shots' })), ammoDots, h('em', {}, coarseHint()));
-    const fxEl = h('div', { class: 'mz-fx' });
-    const hitArcs = h('div', { class: 'mz-arcs' });
-    const webEl = h('div', { class: 'mz-webfx', html: webSvg() }), stoneEl = h('div', { class: 'mz-stonefx' });
-    const leftEl = h('b', {}, '0');
+    const isCoarse = matchMedia('(pointer: coarse)').matches;
+    const ammoEl = h('button', { class: 'mz-ammo', type: 'button', 'aria-label': 'reload' }, h('small', {}, L({ it: 'colpi', en: 'shots' })), ammoDots, h('em', {}, isCoarse ? L({ it: 'tocca per ricaricare', en: 'tap to reload' }) : L({ it: 'R ricarica', en: 'R reload' })));
+    const livesEl = h('div', { class: 'mz-lives', 'aria-label': 'lives' });
+    const goalLabel = h('small', {}), goalNum = h('b', {}, '');
+    const goalEl = h('div', { class: 'mz-tr' }, goalLabel, goalNum);
     const lvlNum = h('b', {}, '1'), lvlSub = h('span', {});
-    const titleEl = h('div', { class: 'mz-level' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('div', {}, lvlNum, h('i', {}, '/40')), lvlSub);
-    const plaqueA = h('b', {}), plaqueB = h('span', {});
-    const plaque = h('div', { class: 'mz-plaque' }, plaqueA, plaqueB);
+    const titleEl = h('div', { class: 'mz-level' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('div', {}, lvlNum, h('i', {}, '/15')), lvlSub);
+    const bossName = h('small', {}), bossFill = h('i');
+    const bossEl = h('div', { class: 'mz-boss', hidden: true }, bossName, h('div', { class: 'mz-bar' }, bossFill));
+    const barsEl = h('div', { class: 'mz-bars' });
     const banner = h('div', { class: 'mz-banner' });
-    const bossFill = h('i');
-    const bossEl = h('div', { class: 'mz-boss', hidden: true }, h('small', {}, ''), h('div', { class: 'mz-bar' }, bossFill));
     const whisper = h('div', { class: 'mz-whisper' });
-    const hurtEl = h('div', { class: 'mz-hurt' });
+    const arcs = h('div', { class: 'mz-arcs' });
     const fireBtn = h('button', { class: 'mz-btn mz-fire', type: 'button', 'aria-label': 'fire' }, L({ it: 'FUOCO', en: 'FIRE' }));
-    const bombBtn = h('button', { class: 'mz-btn mz-bomb', type: 'button', 'aria-label': 'bomb' }, L({ it: 'BOMBA', en: 'BOMB' }));
+    const actBtn = h('button', { class: 'mz-btn mz-act', type: 'button', hidden: true }, '');
     const pauseBtn = h('button', { class: 'mz-pause-btn', type: 'button', 'aria-label': 'pause', html: '&#10074;&#10074;' });
     const knob = h('i');
     const joy = h('div', { class: 'mz-joy', hidden: true }, knob);
+    const actHint = h('div', { class: 'mz-act-hint', hidden: true });
     const hudEl = h('div', { class: 'mz-hud', hidden: true },
-      h('div', { class: 'mz-tl' }, titleEl),
-      h('div', { class: 'mz-tr' }, h('small', {}, L({ it: 'mostri rimasti', en: 'monsters left' })), leftEl),
-      bossEl,
-      h('div', { class: 'mz-cross' }),
-      whisper, plaque, banner,
-      h('div', { class: 'mz-bl' }, h('div', { class: 'mz-hp' }, h('small', {}, L({ it: 'vita', en: 'life' })), h('div', { class: 'mz-bar' }, hpFill), hpNum), bombsEl),
-      ammoEl, fxEl, hitArcs,
-      joy, fireBtn, bombBtn, pauseBtn);
+      h('div', { class: 'mz-tl' }, titleEl, livesEl), goalEl, bossEl, barsEl,
+      h('div', { class: 'mz-cross' }), whisper, banner, arcs, actHint,
+      h('div', { class: 'mz-bl' }, h('div', { class: 'mz-hp' }, h('small', {}, L({ it: 'vita', en: 'life' })), h('div', { class: 'mz-bar' }, hpFill), hpNum)),
+      ammoEl, joy, fireBtn, actBtn, pauseBtn);
     const layer = h('div', { class: 'mz-layer' });
-    const root = h('div', { class: 'mz' }, canvas, h('div', { class: 'mz-grain' }), webEl, stoneEl, hurtEl, hudEl, layer);
+    const root = h('div', { class: 'mz' }, canvas, hudEl, layer);
     stage.replaceChildren(root);
     root.addEventListener('scroll', () => { root.scrollTop = 0; root.scrollLeft = 0; });
 
     const prog = loadProg();
-    const run = { start: 0, idx: 0, restored: [], playing: false, over: false };
-    let whisperT = 6;
-    const coarse = matchMedia('(pointer: coarse)').matches;
+    const run = { lives: LIVES, idx: 0, crossed: [], stats: {}, playing: false, over: false, levels: [], level: null };
+    let whisperT = 8;
 
+    // ---------- engine ----------
     const E = createEngine(canvas, {
       onHud(s) {
-        hpFill.style.transform = `scaleX(${s.hp / 100})`;
+        hpFill.style.transform = `scaleX(${s.hp / s.maxHp})`;
         hpNum.textContent = s.hp;
-        hudEl.classList.toggle('is-low', s.hp < 30);
-        bombsEl.textContent = '✚'.repeat(Math.min(6, s.bombs)) || '–';
-        if (s.ammo != null) {
-          ammoDots.replaceChildren(...Array.from({ length: s.max }, (_, k) => h('i', { class: k < s.ammo && !s.reloading ? 'is-full' : '' })));
-          ammoEl.classList.toggle('is-reloading', !!s.reloading);
-          ammoEl.classList.toggle('is-empty', !s.reloading && s.ammo === 0);
-        }
-        showFx(s);
-        leftEl.textContent = s.left;
-        if (s.boss != null) { bossEl.hidden = false; bossFill.style.transform = `scaleX(${s.boss})`; } else bossEl.hidden = true;
-        root.style.setProperty('--gaze', s.gaze.toFixed(2));
+        hudEl.classList.toggle('is-low', s.hp < s.maxHp * 0.3);
+        ammoDots.replaceChildren(...Array.from({ length: s.max }, (_, k) => h('i', { class: k < s.ammo && !s.reloading ? 'is-full' : '' })));
+        ammoEl.classList.toggle('is-reloading', !!s.reloading);
+        ammoEl.classList.toggle('is-empty', !s.reloading && s.ammo === 0);
+        if (s.goal) { goalEl.hidden = false; goalLabel.textContent = s.goal.label; goalNum.textContent = s.goal.value; } else goalEl.hidden = true;
+        if (s.boss) { bossEl.hidden = false; bossName.textContent = s.boss.name; bossFill.style.transform = `scaleX(${s.boss.v})`; } else bossEl.hidden = true;
+        barsEl.replaceChildren(...s.bars.map((b) => h('div', { class: 'mz-xbar', style: { '--c': b.color || '#e8dcc0' } }, h('small', {}, b.label || b.id), h('div', { class: 'mz-bar' }, h('i', { style: { transform: `scaleX(${Math.max(0, Math.min(1, b.value ?? 0))})` } })))));
       },
-      onKill({ boss, child, idx }) {
-        const pts = Math.round(40 * (1 + idx * 0.15) * (boss ? 15 : child ? 0.4 : 1));
-        api.add(pts);
-        if (boss) vibrate([60, 40, 120]);
+      onKill({ boss, n, score }) {
+        api.add(Math.round(60 * (1 + (n - 1) * 0.25) * (boss ? 12 : 1) * score));
+        if (boss) vibrate([60, 40, 120]); else vibrate(12);
       },
-      onEvent(kind, data) {
-        if (kind === 'hurt') { vibrate(30); hurtEl.animate?.([{ opacity: 0.9 }, { opacity: 0 }], { duration: 420, easing: 'ease-out' }); if (data?.ang != null) arc(data.ang); }
-        if (kind === 'scream') vibrate([80, 30, 80]);
-        if (kind === 'wake' && Math.random() < 0.25) say();
+      onEvent(kind, d) {
+        if (kind === 'hurt') { vibrate(30); if (d?.ang != null) arc(d.ang); }
+        if (kind === 'say') showBanner([h('span', {}, d.text)], d.ms);
+        if (kind === 'whisper') say(d.text);
+        if (kind === 'life') { run.lives = Math.min(MAX_LIVES, run.lives + 1); drawLives(true); }
+        if (kind === 'action') setAction(d);
       },
-      onClear(st) { setTimeout(() => cleared(st), 700); },
-      onDeath(st) { run.playing = false; unlock(); setTimeout(() => died(st), 1300); },
+      onWin(st) { setTimeout(() => cleared(st), 900); },
+      onDeath(st) { run.playing = false; unlockPointer(); setTimeout(() => died(st), 1400); },
     });
     const ro = new ResizeObserver(() => { const r = root.getBoundingClientRect(); if (r.width > 0) { E.resize(r.width, r.height); E.render(); } });
     ro.observe(root);
     const r0 = root.getBoundingClientRect(); E.resize(r0.width || 800, r0.height || 500);
-    E.S.touch = coarse;
-    root.classList.toggle('is-touch', coarse);
+    root.classList.toggle('is-touch', isCoarse);
+    E.run();
 
-    // Plaque: when you face a frame up close, the label tells you what you are looking at.
-    let plaqueKey = '';
-    const pTimer = setInterval(() => {
-      const S = E.S;
-      let key = '';
-      if (run.playing && !S.paused && S.lookDist < (S.lookCell >= 4 ? 5 : 3.4)) key = S.lookCell === 2 ? 'art' : S.lookCell === 3 ? 'empty' : S.lookCell >= 4 ? 'master' : '';
-      if (key === plaqueKey) return;
-      plaqueKey = key;
-      const lv = LEVELS[run.idx];
-      if (key === 'art') { plaqueA.textContent = L(lv.title); plaqueB.textContent = `${lv.artist} · ${lv.year}`; }
-      if (key === 'master') { plaqueA.textContent = L(lv.title); plaqueB.textContent = `${lv.artist} · ${lv.year} · ${L({ it: 'il capolavoro della sala', en: 'the masterpiece of the hall' })}`; }
-      if (key === 'empty') { plaqueA.textContent = L({ it: 'Cornice vuota', en: 'Empty frame' }); plaqueB.textContent = L({ it: `qui c’era un ${L(lv.monster.name).toLowerCase()}: uccidilo e torna dentro`, en: `a ${L(lv.monster.name).toLowerCase()} escaped from here: kill it and it goes back in` }); }
-      plaque.classList.toggle('is-on', !!key); plaque.classList.toggle('is-master', key === 'master');
-      plaque.classList.toggle('is-empty', key === 'empty');
-    }, 150);
-
-    function showBanner(kids, ms = 3400) {
+    function drawLives(pulse) {
+      livesEl.replaceChildren(...Array.from({ length: Math.max(run.lives, LIVES) }, (_, k) => h('i', { class: k < run.lives ? 'is-on' : '' })));
+      if (pulse) livesEl.animate?.([{ transform: 'scale(1.4)' }, { transform: 'none' }], { duration: 500 });
+    }
+    function setAction(cfg) {
+      const label = L(cfg?.label);
+      actBtn.hidden = !cfg || !isCoarse; actBtn.textContent = label;
+      actHint.hidden = !cfg || isCoarse;
+      actHint.textContent = cfg ? `${L({ it: 'tasto destro / Spazio', en: 'right click / Space' })}: ${label}` : '';
+    }
+    function showBanner(kids, ms = 3200) {
       banner.replaceChildren(...kids);
       banner.getAnimations?.().forEach((a) => a.cancel());
-      banner.animate?.([{ opacity: 0, transform: 'translate(-50%, -40%) scale(.96)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.12 }, { opacity: 1, offset: 0.78 }, { opacity: 0, transform: 'translate(-50%, -56%)' }], { duration: ms, easing: 'ease-in-out', fill: 'forwards' });
+      banner.animate?.([{ opacity: 0, transform: 'translate(-50%, -40%) scale(.96)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.12 }, { opacity: 1, offset: 0.8 }, { opacity: 0, transform: 'translate(-50%, -56%)' }], { duration: ms, easing: 'ease-in-out', fill: 'forwards' });
     }
-
-    // ---------- maluses: what is hurting you, how much, for how long ----------
-    function coarseHint() { return matchMedia('(pointer: coarse)').matches ? L({ it: 'tocca per ricaricare', en: 'tap to reload' }) : L({ it: 'R ricarica', en: 'R reload' }); }
-    function webSvg() {
-      let p = '';
-      for (const [cx, cy, sx, sy] of [[0, 0, 1, 1], [100, 0, -1, 1], [0, 100, 1, -1], [100, 100, -1, -1]]) {
-        for (let k = 0; k < 7; k++) { const a = (k / 6) * (Math.PI / 2); p += `M${cx} ${cy} L${cx + sx * Math.cos(a) * 42} ${cy + sy * Math.sin(a) * 42} `; }
-        for (let r = 8; r <= 40; r += 8) { p += `M${cx + sx * r} ${cy} `; for (let k = 1; k <= 6; k++) { const a = (k / 6) * (Math.PI / 2); p += `Q${cx + sx * Math.cos(a - 0.13) * r * 0.86} ${cy + sy * Math.sin(a - 0.13) * r * 0.86} ${cx + sx * Math.cos(a) * r} ${cy + sy * Math.sin(a) * r} `; } }
-      }
-      return `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${p}" fill="none" stroke="rgba(240,240,232,.75)" stroke-width=".35" vector-effect="non-scaling-stroke"/></svg>`;
-    }
-    const FX = {
-      web: { name: { it: 'Ragnatela', en: 'Web' }, d: { it: 'sei invischiato: ti muovi a metà velocità', en: 'snared: you move at half speed' } },
-      gaze: { name: { it: 'Sguardo', en: 'Gaze' }, d: { it: 'ti pietrifica e ti toglie vita: non guardarlo', en: 'turns you to stone and drains you: look away' } },
-      scream: { name: { it: 'Urlo', en: 'Scream' }, d: { it: 'stordito: la vista si strappa', en: 'stunned: your sight tears' } },
-    };
-    const fxChips = {};
-    function chip(key, k) {
-      let c = fxChips[key];
-      if (!c) { const bar = h('i'); c = fxChips[key] = { el: h('div', { class: `mz-chip mz-chip--${key}` }, h('b', {}, L(FX[key].name)), h('span', {}, L(FX[key].d)), h('div', { class: 'mz-chip-bar' }, bar)), bar }; }
-      c.bar.style.transform = `scaleX(${Math.max(0, Math.min(1, k))})`;
-      return c.el;
-    }
-    function showFx(s) {
-      const list = [];
-      if (s.slowT > 0) list.push(chip('web', s.slowT / 2.5));
-      if (s.gaze > 0.06) list.push(chip('gaze', s.gaze));
-      if (s.screamT > 0) list.push(chip('scream', s.screamT / 1.3));
-      fxEl.replaceChildren(...list);
-      webEl.style.opacity = s.slowT > 0 ? Math.min(1, 0.35 + s.slowT / 2.5) : 0;
-      stoneEl.style.opacity = Math.min(1, s.gaze * 1.3);
+    function say(text) {
+      const list = WHISPERS[lang()];
+      whisper.textContent = text || list[Math.floor(Math.random() * list.length)];
+      whisper.animate?.([{ opacity: 0, transform: 'translate(-50%, 6px)' }, { opacity: 0.85, transform: 'translate(-50%, 0)', offset: 0.2 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0, transform: 'translate(-50%, -4px)' }], { duration: 3400, easing: 'ease-in-out' });
     }
     function arc(ang) {
       const a = h('i', { style: { transform: `rotate(${ang * 180 / Math.PI}deg)` } });
-      hitArcs.append(a);
+      arcs.append(a);
       a.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'ease-in' });
       setTimeout(() => a.remove(), 900);
     }
-
-    function say() {
-      const list = WHISPERS[lang()];
-      whisper.textContent = list[Math.floor(Math.random() * list.length)];
-      whisper.animate?.([{ opacity: 0, transform: 'translate(-50%, 6px)' }, { opacity: 0.85, transform: 'translate(-50%, 0)', offset: 0.2 }, { opacity: 0.85, offset: 0.7 }, { opacity: 0, transform: 'translate(-50%, -4px)' }], { duration: 3200, easing: 'ease-in-out' });
-    }
-    // HUD whispers on a slow clock
     const wTimer = setInterval(() => {
       if (!run.playing || E.S.paused) return;
-      whisperT -= 1;
-      if (whisperT <= 0) { say(); whisperT = 9 + Math.random() * 10 - Math.min(6, run.idx / 6); }
+      if (--whisperT <= 0) { say(); whisperT = 12 + Math.random() * 12; }
     }, 1000);
 
     // ---------- screens ----------
     const card = (cls, ...kids) => { const c = h('div', { class: `mz-card ${cls}` }, ...kids); layer.replaceChildren(h('div', { class: 'mz-veil' }, c)); c.animate?.([{ opacity: 0, transform: 'translateY(18px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' }); return c; };
     const closeCard = () => layer.replaceChildren();
     const btn = (label, onclick, cls = '') => { const b = h('button', { class: `mz-cta ${cls}`, type: 'button' }, label); b.onclick = onclick; return b; };
+    const artImg = (lv, cls = 'mz-art') => (lv.image ? h('img', { class: cls, src: lv.image, alt: `${L(lv.title)}, ${lv.artist}`, decoding: 'async' }) : h('div', { class: `${cls} mz-art--empty` }, '?'));
+
+    function track(i) {
+      return h('div', { class: 'mz-track', 'aria-hidden': 'true' }, PLAN.map((_, k) => h('i', { class: `${k < i ? 'is-past' : ''}${k === i ? ' is-now' : ''}${k >= 12 ? ' is-hard' : ''}` })));
+    }
 
     function select() {
-      hudEl.hidden = true;
-      E.halt(); E.setPaused(true);
-      const grid = h('div', { class: 'mz-halls' });
-      LEVELS.forEach((lv, i) => {
-        const seen = i <= prog.max;
-        const startable = seen && i % 5 === 0;
-        const thumb = seen ? paintingArt(lv, i, 160, 120) : null;
-        if (thumb) thumb.className = 'mz-hall-art';
-        const b = h('button', { class: `mz-hall${startable ? ' is-start' : ''}${seen ? '' : ' is-locked'}${prog.restored.includes(i) ? ' is-done' : ''}`, type: 'button', disabled: !startable, 'aria-label': `${L({ it: 'Livello', en: 'Level' })} ${i + 1} ${seen ? L(lv.title) : ''}` },
-          thumb || h('span', { class: 'mz-hall-art mz-hall-art--dark' }, '?'),
-          h('b', {}, String(i + 1)),
-          (i + 1) % 5 === 0 ? h('em', {}, 'boss') : null);
-        if (startable) b.onclick = () => begin(i);
-        grid.append(b);
-      });
+      hudEl.hidden = true; E.setPaused(true);
+      const ready = LEVELS.filter((l) => l.ready);
+      const grid = h('div', { class: 'mz-halls' }, LEVELS.map((lv, i) => h('div', { class: `mz-hall${lv.ready ? '' : ' is-locked'}${prog.restored.includes(lv.n) ? ' is-done' : ''}`, title: `${lv.n}. ${lv.artist} · ${L(lv.title)}` },
+        lv.ready && lv.image && i <= prog.max ? h('img', { class: 'mz-hall-art', src: lv.image, alt: '', loading: 'lazy' }) : h('span', { class: 'mz-hall-art mz-hall-art--dark' }, lv.ready ? ROMAN(lv.n) : '…'),
+        h('b', {}, String(lv.n)))));
       card('mz-card--select',
-        h('small', { class: 'mz-kicker' }, L({ it: 'Il Museo Maledetto · 40 livelli', en: 'The Cursed Museum · 40 levels' })),
-        h('h2', {}, L({ it: 'Da quale livello parti?', en: 'Which level do you start from?' })),
-        h('p', {}, L({ it: 'Ogni livello è una sala del museo dedicata a un quadro. Svuoti la sala, passi al livello dopo, sempre più difficile. Ogni 5 livelli c’è un boss e si sblocca un nuovo punto di partenza. Punteggio e quadri restano su questo dispositivo.', en: 'Each level is a museum hall devoted to one painting. Clear the hall and you move on to the next, harder level. Every 5 levels there is a boss and a new starting point unlocks. Score and paintings stay on this device.' })),
+        h('small', { class: 'mz-kicker' }, L({ it: 'Il Museo Maledetto · 15 quadri', en: 'The Cursed Museum · 15 paintings' })),
+        h('h2', {}, L({ it: 'Scendi nei quadri.', en: 'Descend into the paintings.' })),
+        h('p', {}, L({ it: `Quindici opere vere, dalla più antica alla più feroce. In ognuna una mappa, dei mostri e una regola diversa. Hai ${LIVES} vite per tutta la discesa: finite quelle, si ricomincia dal primo quadro.`, en: `Fifteen real works, from the oldest to the most ferocious. Each one has its own map, monsters and rule. You have ${LIVES} lives for the whole descent: when they are gone, you start again from the first painting.` })),
         grid,
-        h('p', { class: 'mz-fine' }, L({ it: 'Le opere sono omaggi procedurali ispirati ai dipinti originali, non riproduzioni.', en: 'Artworks are procedural homages inspired by the original paintings, not reproductions.' })));
+        ready.length < 15 ? h('p', { class: 'mz-fine' }, L({ it: `${15 - ready.length} quadri sono ancora in restauro: la discesa per ora attraversa quelli pronti.`, en: `${15 - ready.length} paintings are still being restored: for now the descent crosses the ready ones.` })) : null,
+        h('div', { class: 'mz-row' },
+          ready.length ? btn(L({ it: 'Inizia la discesa', en: 'Begin the descent' }) + ' →', () => begin()) : null,
+          exampleMode || !ready.length ? btn(L({ it: 'Livello di prova', en: 'Test level' }), () => beginExample(), 'mz-cta--ghost') : null),
+        h('p', { class: 'mz-fine' }, L({ it: 'Riproduzioni di opere in pubblico dominio, salvo dove indicato. Immagini disturbanti.', en: 'Reproductions of public-domain works unless stated. Disturbing imagery.' })));
     }
 
-    function begin(i) { run.start = i; run.idx = i; run.restored = []; run.over = false; intro(i); }
+    function begin() {
+      run.levels = LEVELS.filter((l) => l.ready);
+      Object.assign(run, { lives: LIVES, idx: 0, crossed: [], over: false });
+      intro();
+    }
+    async function beginExample() {
+      const ex = await loadExample();
+      run.levels = [ex];
+      Object.assign(run, { lives: LIVES, idx: 0, crossed: [], over: false });
+      intro();
+    }
 
-    function intro(i) {
-      const lv = LEVELS[i], d = difficulty(i);
-      api.hud(L({ it: 'Livello', en: 'Level' }), `${i + 1}/40`);
-      E.load(i);
-      E.render();
+    async function intro(retry = false) {
+      const lv = run.levels[run.idx];
+      run.level = lv;
       hudEl.hidden = true;
-      const art = paintingArt(lv, i, 480, 360); art.className = 'mz-art';
-      const skulls = '☠'.repeat(threat(i)) + '·'.repeat(5 - threat(i));
-      card(`mz-card--intro${d.boss ? ' is-boss' : ''}`,
-        h('div', { class: 'mz-frame' }, art),
+      api.hud(L({ it: 'Livello', en: 'Level' }), `${lv.n}/15`);
+      const loading = card('mz-card--loading', h('p', { class: 'mz-kicker' }, L({ it: 'Il quadro si apre…', en: 'The painting opens…' })));
+      await loadImage(lv.image);
+      if (run.over) return;
+      await E.load(lv, lv.n, { lang: lang() });
+      setAction(E.ctx._action || null);
+      if (layer.firstChild?.firstChild !== loading) return;
+      const skulls = Math.min(5, 1 + Math.floor((lv.n - 1) / 3));
+      card(`mz-card--intro${lv.n >= 13 ? ' is-boss' : ''}`,
+        h('div', { class: 'mz-frame' }, artImg(lv), lv.credit ? h('small', { class: 'mz-credit' }, L(lv.credit)) : null),
         h('div', { class: 'mz-info' },
           h('div', { class: 'mz-lvl-head' },
-            h('span', { class: 'mz-lvl-big' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('b', {}, String(i + 1)), h('i', {}, '/40')),
-            h('span', { class: 'mz-kicker' }, `${L({ it: 'Sala', en: 'Hall' })} ${ROMAN(i + 1)}${d.boss ? ' · BOSS' : ''}`)),
-          track(i),
-          h('p', { class: 'mz-artist' }, `${lv.artist} · ${lv.year}`),
+            h('span', { class: 'mz-lvl-big' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('b', {}, String(lv.n)), h('i', {}, '/15')),
+            h('span', { class: 'mz-threat', title: 'threat' }, '☠'.repeat(skulls) + '·'.repeat(5 - skulls))),
+          track(lv.n - 1),
+          h('p', { class: 'mz-artist' }, `${lv.artist} · ${lv.year}${lv.museum ? ' · ' + L(lv.museum) : ''}`),
           h('h2', {}, L(lv.title)),
-          h('p', { class: 'mz-note' }, L(lv.note)),
-          h('div', { class: 'mz-mon' }, h('small', {}, L({ it: 'Cosa è uscito dal quadro', en: 'What crawled out' })), h('b', {}, `${d.boss ? (lang() === 'en' ? 'The Great ' : 'Il Grande ') : ''}${L(lv.monster.name)}`), h('span', { class: 'mz-threat', title: 'threat' }, skulls)),
-          h('ul', { class: 'mz-abil' }, lv.abilities.map((a) => h('li', {}, h('b', {}, L(ABIL[a])), ' ', L(ABIL[a].d)))),
-          h('p', { class: 'mz-goal' }, i === LEVELS.length - 1
-            ? L({ it: 'Obiettivo: uccidi tutti i mostri della sala. È l’ultimo livello.', en: 'Goal: kill every monster in the hall. This is the last level.' })
-            : L({ it: `Obiettivo: uccidi tutti i mostri della sala per passare al livello ${i + 2}.`, en: `Goal: kill every monster in the hall to reach level ${i + 2}.` })),
+          lv.intro ? h('p', { class: 'mz-note' }, L(lv.intro)) : null,
+          lv.rule ? h('div', { class: 'mz-rule' }, h('small', {}, L({ it: 'La regola di questo quadro', en: 'The rule of this painting' })), h('p', {}, L(lv.rule))) : null,
+          lv.goal ? h('p', { class: 'mz-goal' }, L(lv.goal)) : null,
+          h('div', { class: 'mz-lives-row' }, h('small', {}, retry ? L({ it: 'Ti restano', en: 'Lives left' }) : L({ it: 'Vite', en: 'Lives' })), livesEl.cloneNode(true)),
           h('div', { class: 'mz-row' },
-            btn(L({ it: `Inizia il livello ${i + 1}`, en: `Start level ${i + 1}` }) + ' →', () => enter()),
-            i === run.start ? btn(L({ it: 'Cambia livello', en: 'Other level' }), () => select(), 'mz-cta--ghost') : null)));
+            btn(retry ? L({ it: 'Rientra nel quadro', en: 'Enter the painting again' }) + ' →' : L({ it: `Entra nel livello ${lv.n}`, en: `Enter level ${lv.n}` }) + ' →', () => enter()))));
+      drawLives();
+      layer.querySelector('.mz-lives-row .mz-lives')?.replaceWith(livesEl.cloneNode(true));
     }
 
-    // 40 ticks: done, current, still to come
-    function track(i) {
-      return h('div', { class: 'mz-track', 'aria-hidden': 'true' }, LEVELS.map((_, k) => h('i', { class: `${k < i ? 'is-past' : ''}${k === i ? ' is-now' : ''}${(k + 1) % 5 === 0 ? ' is-boss' : ''}` })));
-    }
+    function lockPointer() { if (isCoarse) return; try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch {} }
+    function unlockPointer() { try { document.exitPointerLock?.(); } catch {} }
 
-    function lockPointer() { if (coarse) return; try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch {} }
     function enter() {
       closeCard();
+      const lv = run.level;
       hudEl.hidden = false;
-      const lv = LEVELS[run.idx];
-      lvlNum.textContent = String(run.idx + 1);
-      root.style.setProperty('--mz-accent', lv.pal.accent);
+      lvlNum.textContent = String(lv.n);
       lvlSub.textContent = `${lv.artist} · ${L(lv.title)}`;
-      showBanner([
-        h('small', {}, L({ it: 'Livello', en: 'Level' })),
-        h('b', {}, String(run.idx + 1)),
-        h('span', {}, L(lv.title)),
-        h('em', {}, L({ it: `Uccidi i ${E.S.total} mostri della sala`, en: `Kill the ${E.S.total} monsters in the hall` })),
-      ]);
-      run.playing = true;
-      whisperT = 5;
-      E.setPaused(false); E.run();
-      lockPointer();
-      stopKeys();
+      root.style.setProperty('--mz-accent', lv.accent || '#ff5a4a');
+      drawLives();
+      showBanner([h('small', {}, L({ it: 'Livello', en: 'Level' })), h('b', {}, String(lv.n)), h('span', {}, L(lv.title)), lv.rule ? h('em', {}, L(lv.ruleShort || lv.rule)) : null], 3600);
+      E.audio.start(); E.audio.toll(98 - lv.n * 2);
+      run.playing = true; whisperT = 10;
+      E.setPaused(false);
+      lockPointer(); stopKeys();
     }
 
     function pause() {
-      if (!run.playing || E.S.paused || E.S.done || !E.S.alive) return;
+      if (!run.playing || E.S.paused || E.S.done || E.S.dead) return;
       E.setPaused(true); stopKeys();
       card('mz-card--pause',
         h('h2', {}, L({ it: 'Pausa', en: 'Paused' })),
-        h('p', {}, L({ it: 'Il museo aspetta. Non per sempre.', en: 'The museum waits. Not forever.' })),
+        h('p', {}, L({ it: 'Il quadro aspetta. Non per sempre.', en: 'The painting waits. Not forever.' })),
         h('div', { class: 'mz-row' },
           btn(L({ it: 'Riprendi', en: 'Resume' }), () => { closeCard(); E.setPaused(false); lockPointer(); }),
           btn(L({ it: 'Esci e salva il punteggio', en: 'Quit and save score' }), () => finish(false), 'mz-cta--ghost')));
     }
 
-    function unlock() { prog.max = Math.max(prog.max, run.idx); saveProg(prog); }
-
     function cleared(st) {
       if (run.over) return;
-      run.playing = false;
-      try { document.exitPointerLock?.(); } catch {}
-      stopKeys();
-      const i = run.idx, lv = LEVELS[i];
-      const q = Math.min(1, 0.5 * (st.hp / 100) + 0.5 * Math.min(1, st.acc * 1.6));
-      api.hit(q, { silent: true });
-      const bonus = Math.round(300 * (1 + i * 0.2) + st.hp * 4);
+      run.playing = false; unlockPointer(); stopKeys();
+      const lv = run.level;
+      api.hit(Math.min(1, 0.5 * (st.hp / st.maxHp) + 0.5 * Math.min(1, st.acc * 1.5)), { silent: true });
+      const bonus = Math.round(400 * (1 + (lv.n - 1) * 0.3) + st.hp * 5);
       api.add(bonus);
-      run.restored.push(i);
-      if (!prog.restored.includes(i)) prog.restored.push(i);
-      prog.max = Math.max(prog.max, Math.min(LEVELS.length - 1, i + 1));
+      run.crossed.push(lv); run.stats[lv.n] = st;
+      if (!prog.restored.includes(lv.n)) prog.restored.push(lv.n);
+      prog.max = Math.max(prog.max, LEVELS.indexOf(lv) + 1);
       saveProg(prog);
-      const last = i === LEVELS.length - 1;
-      const art = paintingArt(lv, i, 480, 360); art.className = 'mz-art';
+      const last = run.idx >= run.levels.length - 1;
+      const disc = lv.discovery || {};
+      E.audio.toll(73);
       card('mz-card--clear',
-        h('div', { class: 'mz-frame is-restored' }, art),
+        h('div', { class: 'mz-frame is-restored' }, disc.image ? h('img', { class: 'mz-art', src: disc.image, alt: '' }) : artImg(lv)),
         h('div', { class: 'mz-info' },
-          h('small', { class: 'mz-kicker' }, `${L({ it: 'Livello', en: 'Level' })} ${i + 1} ${L({ it: 'superato', en: 'cleared' })} · ${L({ it: 'quadro restaurato', en: 'painting restored' })}`),
-          track(i + 1),
-          h('h2', {}, L(lv.title)),
+          h('small', { class: 'mz-kicker' }, `${L({ it: 'Livello', en: 'Level' })} ${lv.n} ${L({ it: 'attraversato', en: 'crossed' })}`),
+          track(lv.n),
           h('p', { class: 'mz-artist' }, `${lv.artist} · ${lv.year}`),
+          h('h2', {}, L(disc.title) || L(lv.title)),
+          disc.text ? h('div', { class: 'mz-discovery' }, h('small', {}, L({ it: 'La scoperta', en: 'The discovery' })), h('p', {}, L(disc.text))) : null,
+          disc.more ? h('p', { class: 'mz-fine' }, L(disc.more)) : null,
           h('div', { class: 'mz-stats' },
             h('div', {}, h('small', {}, L({ it: 'anime', en: 'souls' })), h('b', {}, st.kills)),
             h('div', {}, h('small', {}, L({ it: 'mira', en: 'aim' })), h('b', {}, Math.round(st.acc * 100) + '%')),
-            h('div', {}, h('small', {}, L({ it: 'vita', en: 'life' })), h('b', {}, Math.round(st.hp))),
+            h('div', {}, h('small', {}, L({ it: 'vita', en: 'life' })), h('b', {}, st.hp)),
             h('div', {}, h('small', {}, L({ it: 'tempo', en: 'time' })), h('b', {}, Math.round(st.time) + 's')),
             h('div', {}, h('small', {}, 'bonus'), h('b', {}, '+' + bonus))),
           h('div', { class: 'mz-row' },
-            last ? btn(L({ it: 'Hai liberato il museo', en: 'You freed the museum' }) + ' →', () => finish(true)) : btn(L({ it: `Vai al livello ${i + 2}`, en: `Go to level ${i + 2}` }) + ' →', () => { run.idx = i + 1; intro(run.idx); }),
-            btn(L({ it: 'Scarica il quadro', en: 'Download painting' }), () => restoredPainting(i, store.name, lang()).toBlob((b) => download(`occhio-museo-${i + 1}.png`, b), 'image/png'), 'mz-cta--ghost'),
+            last ? btn(L({ it: 'Esci dal museo', en: 'Leave the museum' }) + ' →', () => finish(true)) : btn(L({ it: `Scendi al livello ${run.levels[run.idx + 1].n}`, en: `Go down to level ${run.levels[run.idx + 1].n}` }) + ' →', () => { run.idx++; intro(); }),
+            btn(L({ it: 'Scarica il quadro', en: 'Download painting' }), () => saveSouvenir(lv), 'mz-cta--ghost'),
             btn(L({ it: 'Esci', en: 'Quit' }), () => finish(false), 'mz-cta--ghost'))));
     }
+    async function saveSouvenir(lv) {
+      const img = await loadImage(lv.image);
+      souvenir(lv, img, store.name, lang(), run.stats[lv.n]).toBlob((b) => download(`occhio-museo-${lv.n}-${(lv.id || 'quadro')}.png`, b), 'image/png');
+    }
 
-    function died(st) {
+    function died() {
       if (run.over) return;
-      try { document.exitPointerLock?.(); } catch {}
-      stopKeys();
-      card('mz-card--dead',
-        h('small', { class: 'mz-kicker' }, `${L({ it: 'Livello', en: 'Level' })} ${run.idx + 1} / 40`),
-        h('h2', {}, L({ it: 'Il museo ti ha incorniciato.', en: 'The museum framed you.' })),
-        h('p', {}, L({ it: `Ora sei tu, appeso in ${L(LEVELS[run.idx].title)}.`, en: `Now it is you, hanging in ${L(LEVELS[run.idx].title)}.` })),
-        h('div', { class: 'mz-row' }, btn(L({ it: 'Vedi il risultato', en: 'See results' }), () => finish(false))));
+      unlockPointer(); stopKeys();
+      run.lives--;
+      drawLives(true);
+      const lv = run.level;
+      if (run.lives > 0) {
+        card('mz-card--dead',
+          h('small', { class: 'mz-kicker' }, `${L({ it: 'Livello', en: 'Level' })} ${lv.n} / 15`),
+          h('h2', {}, L(lv.deathLine) || L({ it: 'Il quadro ti ha preso.', en: 'The painting took you.' })),
+          h('div', { class: 'mz-lives-row' }, h('small', {}, L({ it: 'Ti restano', en: 'Lives left' })), livesEl.cloneNode(true)),
+          h('div', { class: 'mz-row' }, btn(L({ it: 'Riprova questo livello', en: 'Retry this level' }) + ' →', () => intro(true)), btn(L({ it: 'Arrenditi', en: 'Give up' }), () => finish(false), 'mz-cta--ghost')));
+      } else {
+        card('mz-card--dead is-final',
+          h('small', { class: 'mz-kicker' }, L({ it: 'Nessuna vita', en: 'No lives left' })),
+          h('h2', {}, L({ it: 'Il museo ti ha incorniciato.', en: 'The museum framed you.' })),
+          h('p', {}, L({ it: `Ora sei appeso anche tu, dentro ${L(lv.title)}. La prossima discesa riparte dal primo quadro.`, en: `Now you hang there too, inside ${L(lv.title)}. The next descent starts from the first painting.` })),
+          h('div', { class: 'mz-row' }, btn(L({ it: 'Vedi il risultato', en: 'See results' }), () => finish(false))));
+      }
     }
 
     function finish(won) {
       if (run.over) return;
       run.over = true; run.playing = false;
-      E.halt(); E.setPaused(true);
-      try { document.exitPointerLock?.(); } catch {}
-      if (!run.restored.length) api.hit(0, { silent: true, quiet: true });
+      E.setPaused(true); unlockPointer();
+      if (!run.crossed.length) api.hit(0, { silent: true, quiet: true });
       closeCard(); hudEl.hidden = true;
-      const restored = run.restored.slice();
-      const exports = [];
-      if (restored.length) exports.push({ label: L({ it: 'La tua galleria (PNG)', en: 'Your gallery (PNG)' }), run: () => gallerySheet(restored, store.name, lang()).toBlob((b) => download('occhio-museo-galleria.png', b), 'image/png') });
-      restored.slice(-6).forEach((i) => exports.push({ label: `${ROMAN(i + 1)} · PNG`, run: () => restoredPainting(i, store.name, lang()).toBlob((b) => download(`occhio-museo-${i + 1}.png`, b), 'image/png') }));
-      const summary = restored.length
-        ? L({ it: `Livelli superati: ${restored.length} (dal ${run.start + 1} al ${restored[restored.length - 1] + 1})${won ? ' · MUSEO LIBERATO' : ''}`, en: `Levels cleared: ${restored.length} (${run.start + 1} to ${restored[restored.length - 1] + 1})${won ? ' · MUSEUM FREED' : ''}` })
-        : L({ it: 'Nessuna sala restaurata. Il museo ride.', en: 'No hall restored. The museum laughs.' });
+      const exports = run.crossed.slice(-8).map((lv) => ({ label: `${lv.n} · ${lv.artist.split(' ').pop()} · PNG`, run: () => saveSouvenir(lv) }));
+      const summary = run.crossed.length
+        ? L({ it: `Quadri attraversati: ${run.crossed.length}${won ? ' · SEI USCITO DAL MUSEO' : ''}`, en: `Paintings crossed: ${run.crossed.length}${won ? ' · YOU LEFT THE MUSEUM' : ''}` })
+        : L({ it: 'Nessun quadro attraversato. Il museo ride.', en: 'No painting crossed. The museum laughs.' });
       api.end({ exports, summary });
     }
 
     // ---------- input ----------
+    const I = E.input;
     const keys = new Set();
-    function stopKeys() { keys.clear(); Object.assign(E.ctl, { fwd: 0, strafe: 0, turn: 0, fire: false }); }
-    const applyKeys = () => {
-      if (touchState.joy) return;
-      E.ctl.fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
-      E.ctl.strafe = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
-      E.ctl.turn = (keys.has('ArrowRight') ? 1 : 0) - (keys.has('ArrowLeft') ? 1 : 0);
-      E.ctl.fire = keys.has('Space') || mouseFire || touchState.fire;
-    };
     let mouseFire = false;
+    function stopKeys() { keys.clear(); mouseFire = false; Object.assign(I, { fwd: 0, strafe: 0, fire: false, alt: false }); }
+    const applyKeys = () => {
+      if (touch.joy != null) return;
+      I.fwd = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0);
+      I.strafe = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
+      I.fire = mouseFire || touch.fire || keys.has('Enter');
+    };
+    const setAlt = (v) => { if (v && !I.alt) I.altPressed = true; I.alt = v; };
     const onKey = (e) => {
       if (!run.playing) return;
       const down = e.type === 'keydown';
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) { e.preventDefault(); down ? keys.add(e.code) : keys.delete(e.code); applyKeys(); }
-      if (down && (e.code === 'KeyE' || e.code === 'KeyQ') && !e.repeat) { E.ctl.bomb = true; }
-      if (down && e.code === 'KeyR' && !e.repeat) E.ctl.reload = true;
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.code)) { e.preventDefault(); down ? keys.add(e.code) : keys.delete(e.code); applyKeys(); }
+      if (e.code === 'Space' || e.code === 'KeyF') { e.preventDefault(); if (!e.repeat) setAlt(down); }
+      if (down && e.code === 'KeyR' && !e.repeat) I.reload = true;
       if (down && (e.code === 'Escape' || e.code === 'KeyP')) pause();
     };
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('keyup', onKey);
+    window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
     const locked = () => document.pointerLockElement === canvas;
-    const onMouseMove = (e) => { if (!run.playing || E.S.paused) return; if (locked() || (mouseFire && e.pointerType === 'mouse')) E.ctl.look += (e.movementX || 0) * 0.0024; };
+    const onMouseMove = (e) => {
+      if (!run.playing || E.S.paused || e.pointerType !== 'mouse') return;
+      if (locked()) { I.lookX += (e.movementX || 0) * 0.0024; I.lookY += (e.movementY || 0) * 0.0024; }
+    };
     document.addEventListener('pointermove', onMouseMove);
     canvas.addEventListener('pointerdown', (e) => {
-      if (e.pointerType !== 'mouse' || !run.playing) return;
-      if (E.S.paused) return;
+      if (e.pointerType !== 'mouse' || !run.playing || E.S.paused) return;
       if (!locked()) lockPointer();
-      mouseFire = true; applyKeys();
+      if (e.button === 2) setAlt(true); else { mouseFire = true; applyKeys(); }
     });
-    const onUp = (e) => { if (e.pointerType === 'mouse') { mouseFire = false; applyKeys(); } };
+    const onUp = (e) => { if (e.pointerType !== 'mouse') return; if (e.button === 2) setAlt(false); else { mouseFire = false; applyKeys(); } };
     window.addEventListener('pointerup', onUp);
     let hadLock = false;
-    const onLock = () => { if (locked()) { hadLock = true; return; } if (hadLock && run.playing && !coarse) pause(); hadLock = false; };
+    const onLock = () => { if (locked()) { hadLock = true; return; } if (hadLock && run.playing && !isCoarse) pause(); hadLock = false; };
     document.addEventListener('pointerlockchange', onLock);
     const onVis = () => { if (document.hidden) pause(); };
     document.addEventListener('visibilitychange', onVis);
 
-    // touch: left joystick, right look, buttons
-    const touchState = { joy: null, look: null, fire: false, jx: 0, jy: 0, lx: 0 };
+    const touch = { joy: null, look: null, fire: false, jx: 0, jy: 0, lx: 0, ly: 0 };
     root.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' || !run.playing || E.S.paused) return;
       if (e.target.closest('.mz-btn, .mz-pause-btn, .mz-card, .mz-ammo')) return;
-      if (!E.S.touch) { E.S.touch = true; root.classList.add('is-touch'); }
       const r = root.getBoundingClientRect();
-      if (e.clientX - r.left < r.width * 0.45 && touchState.joy == null) {
-        touchState.joy = e.pointerId; touchState.jx = e.clientX; touchState.jy = e.clientY;
+      if (e.clientX - r.left < r.width * 0.45 && touch.joy == null) {
+        touch.joy = e.pointerId; touch.jx = e.clientX; touch.jy = e.clientY;
         joy.hidden = false; joy.style.left = `${e.clientX - r.left}px`; joy.style.top = `${e.clientY - r.top}px`; knob.style.transform = 'translate(-50%,-50%)';
-      } else if (touchState.look == null) { touchState.look = e.pointerId; touchState.lx = e.clientX; }
+      } else if (touch.look == null) { touch.look = e.pointerId; touch.lx = e.clientX; touch.ly = e.clientY; }
       try { root.setPointerCapture(e.pointerId); } catch {}
     });
     root.addEventListener('pointermove', (e) => {
-      if (e.pointerId === touchState.joy) {
-        const R = 46; let dx = e.clientX - touchState.jx, dy = e.clientY - touchState.jy; const l = Math.hypot(dx, dy); if (l > R) { dx *= R / l; dy *= R / l; }
+      if (e.pointerId === touch.joy) {
+        const R = 46; let dx = e.clientX - touch.jx, dy = e.clientY - touch.jy; const l = Math.hypot(dx, dy); if (l > R) { dx *= R / l; dy *= R / l; }
         knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-        E.ctl.fwd = -dy / R; E.ctl.strafe = dx / R;
-      } else if (e.pointerId === touchState.look) {
-        E.ctl.look += (e.clientX - touchState.lx) * 0.0065; touchState.lx = e.clientX;
+        I.fwd = -dy / R; I.strafe = dx / R;
+      } else if (e.pointerId === touch.look) {
+        I.lookX += (e.clientX - touch.lx) * 0.0068; I.lookY += (e.clientY - touch.ly) * 0.005; touch.lx = e.clientX; touch.ly = e.clientY;
       }
     });
     const endTouch = (e) => {
-      if (e.pointerId === touchState.joy) { touchState.joy = null; joy.hidden = true; E.ctl.fwd = 0; E.ctl.strafe = 0; }
-      if (e.pointerId === touchState.look) touchState.look = null;
+      if (e.pointerId === touch.joy) { touch.joy = null; joy.hidden = true; I.fwd = 0; I.strafe = 0; }
+      if (e.pointerId === touch.look) touch.look = null;
     };
-    root.addEventListener('pointerup', endTouch);
-    root.addEventListener('pointercancel', endTouch);
-    const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); on(); try { el.setPointerCapture(e.pointerId); } catch {} }); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off); };
-    hold(fireBtn, () => { touchState.fire = true; E.ctl.fire = true; }, () => { touchState.fire = false; E.ctl.fire = keys.has('Space') || mouseFire; });
-    bombBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); E.ctl.bomb = true; vibrate(40); });
+    root.addEventListener('pointerup', endTouch); root.addEventListener('pointercancel', endTouch);
+    const hold = (el, on, off) => { el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); on(); try { el.setPointerCapture(e.pointerId); } catch {} }); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off); };
+    hold(fireBtn, () => { touch.fire = true; I.fire = true; }, () => { touch.fire = false; I.fire = mouseFire; });
+    hold(actBtn, () => { setAlt(true); vibrate(20); }, () => setAlt(false));
     pauseBtn.addEventListener('click', () => pause());
-    ammoEl.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); E.ctl.reload = true; });
+    ammoEl.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); I.reload = true; });
     root.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // test hooks for the double check
+    // test hooks
     window.__museum = {
-      engine: E,
-      start(i) { begin(i); enter(); try { document.exitPointerLock?.(); } catch {} },
-      killAll: () => E.killAll(),
-      step: (n) => E.step(n),
-      getState: () => ({ idx: run.idx, playing: run.playing, alive: E.alive(), total: E.S.total, hp: E.S.hp, done: E.S.done, dead: !E.S.alive, frameMs: E.frameMs, size: E.size, mons: E.S.mons.length, over: run.over }),
-      next() { run.idx++; intro(run.idx); enter(); },
-      hurt: (d) => E.hurt(d),
+      engine: E, run,
+      async start(i = 0, example = false) { if (example) await beginExample(); else begin(); run.idx = i; await intro(); enter(); unlockPointer(); },
+      killAll: () => E.killAll(), step: (n) => E.step(n), win: () => E.ctx?.win(),
+      getState: () => ({ n: run.level?.n, lives: run.lives, playing: run.playing, hp: E.ctx?.player.hp, alive: E.ctx?.monsters.alive, kills: E.S.kills, done: E.S.done, dead: E.S.dead, frameMs: E.S.frameMs, over: run.over }),
     };
 
+    drawLives();
     select();
     api.onCleanup(() => {
-      clearInterval(wTimer); clearInterval(pTimer); ro.disconnect(); E.destroy();
+      clearInterval(wTimer); ro.disconnect(); E.destroy();
       window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKey);
       document.removeEventListener('pointermove', onMouseMove); window.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointerlockchange', onLock); document.removeEventListener('visibilitychange', onVis);
-      try { document.exitPointerLock?.(); } catch {}
+      unlockPointer();
       if (window.__museum?.engine === E) delete window.__museum;
     });
   },
