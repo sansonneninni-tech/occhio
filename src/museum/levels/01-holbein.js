@@ -6,8 +6,8 @@
 const T = (it, en) => ({ it, en });
 const LID_TOP = 3.0;      // m, the open tomb
 const LID_DEATH = 0.55;   // m, closed on you
-const FALL = 0.03;        // m per second (≈ 80 s from open to closed if you never kill)
-const LIFT = 0.16;        // m per kill
+const FALL = 0.06;        // m per second (about 40 s from open to closed if you never kill)
+const LIFT = 0.09;        // m per kill
 const KILLS_PER_SHROUD = 4;
 
 export default {
@@ -86,15 +86,15 @@ export default {
     const hand = {
       name: T('La mano trafitta', 'The pierced hand'),
       sprite: await ctx.art.load('/museo/opere/01-holbein-mano.webp'),
-      height: 0.62, hp: 1, speed: 3.2, dmg: 4, attackEvery: 1.1, reach: 1.0, radius: 0.3,
-      behavior: 'crawl', twitch: 0.9, rot: 0.35, tear: 0.2, breathe: 0.3,
+      height: 0.8, hp: 1, speed: 3.0, dmg: 4, attackEvery: 1.1, reach: 1.0, radius: 0.3,
+      behavior: 'chase', twitch: 0.9, rot: 0.35, tear: 0.2, breathe: 0.3,
       parts: [{ type: 'strands', n: 7, len: 0.45, color: 0x3a0a06, at: [-0.15, 0.2, -0.03], spread: 0.15 }],
       blood: 0x4a0604,
     };
     const face = {
       name: T('Il volto', 'The face'),
       sprite: await ctx.art.load('/museo/opere/01-holbein-volto.webp'),
-      height: 0.85, lift: 1.1, hp: 2, speed: 2.5, dmg: 9, reach: 1.2, radius: 0.35,
+      height: 0.85, lift: 1.1, hp: 2, speed: 2.5, dmg: 7, reach: 1.2, radius: 0.35,
       behavior: 'fly', twitch: 0.6, rot: 0.4, tear: 0.3,
       // the open mouth is the weak point
       zones: [{ name: 'bocca', x: [-0.2, 0.08], y: [0.62, 0.98], mul: 3 }],
@@ -105,7 +105,7 @@ export default {
     const risen = {
       name: T('Il giacente', 'The one who lies'),
       sprite: await ctx.art.load('/museo/opere/01-holbein-ritto.webp'),
-      height: 2.35, hp: 5, speed: 1.5, dmg: 16, reach: 1.3, radius: 0.35,
+      height: 2.35, hp: 4, speed: 1.5, dmg: 11, reach: 1.3, radius: 0.35,
       // like the body in the painting: it looks dead while you look at it
       behavior: 'statue', twitch: 0.25, rot: 0.3, tear: 0.1, breathe: 0.2,
       zones: [{ name: 'costato', x: [-0.5, 0.5], y: [0.62, 0.78], mul: 2 }],
@@ -129,7 +129,7 @@ export default {
       // step out of the niche into the corridor
       return new THREE.Vector3(p.x, 0, p.cy === 1 ? p.z + 1.6 : p.z - 1.6);
     };
-    ctx.data.spawner = ctx.spawner({ kinds: [{ def: hand, w: 5 }, { def: face, w: 2 }, { def: risen, w: 1 }], first: 3, every: 1.6, burst: 1, max: 5, where });
+    ctx.data.spawner = ctx.spawner({ kinds: [{ def: hand, w: 5 }, { def: face, w: 2 }, { def: risen, w: 1 }], first: 3, every: 1.6, burst: 1, max: 4, where });
 
     ctx.hud.bar('lid', { label: T('coperchio', 'lid'), value: 1, color: '#c8c0a0' });
     ctx.hud.goal(T('sudari da squarciare', 'shrouds to tear'), 3);

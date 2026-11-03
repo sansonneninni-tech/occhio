@@ -60,7 +60,7 @@ export default {
       grid,
       legend: { B: { solid: true, tex: 'trap' } },
       textures: { floor: glowMat(ground, 0.2), wall: glowMat(ruin, 0.25), trap: glowMat(trapTex, 0.25) },
-      height: 3.4, ceiling: false,
+      height: 3.4, ceiling: false, floorRepeat: 0.3,
     });
     // the burning sky of the painting as the horizon
     const skyTex = ctx.art.tex(ctx.art.crop([0, 0, 1, 0.22], 1600));
@@ -90,17 +90,17 @@ export default {
     const shield = {
       name: T('Lo scudo-bara', 'The coffin shield'),
       sprite: await ctx.art.load('/museo/opere/03-bruegel-scudo.webp'),
-      height: 2.1, hp: 3, speed: 1.6, dmg: 9, reach: 1.3, behavior: 'chase',
+      height: 2.1, hp: 2.5, speed: 1.5, dmg: 5, reach: 1.3, attackEvery: 1.2, behavior: 'chase',
       twitch: 0.4, rot: 0.3, tear: 0.2,
       // the lid stops most of the shot; the bones behind it break
-      zones: [{ name: 'coperchio', x: [-0.05, 0.5], y: [0, 1], mul: 0.25 }, { name: 'ossa', x: [-0.5, -0.05], y: [0, 1], mul: 1.6 }],
+      zones: [{ name: 'coperchio', x: [-0.05, 0.5], y: [0, 1], mul: 0.4 }, { name: 'ossa', x: [-0.5, -0.05], y: [0, 1], mul: 1.6 }],
       parts: [{ type: 'eyes', at: [[-0.3, 0.86]], size: 0.03, color: 0xe8d8a0, glow: 1 }],
       blood: 0x6a5a40,
     };
     const skeleton = {
       name: T('Lo scheletro col lume', 'The skeleton with the lantern'),
       sprite: await ctx.art.load('/museo/opere/03-bruegel-scheletro.webp'),
-      height: 1.9, hp: 2, speed: 3.0, dmg: 7, reach: 1.2, behavior: 'charge',
+      height: 1.9, hp: 2, speed: 2.8, dmg: 5, reach: 1.2, behavior: 'charge', attackEvery: 1.1,
       twitch: 0.8, rot: 0.4, tear: 0.4,
       parts: [{ type: 'eyes', at: [[-0.07, 0.93], [0.03, 0.93]], size: 0.025, color: 0x200000, pupil: 0x000000 }],
       onAttack: (m, c) => c.audio.growl(1.4, 0.15),
@@ -109,7 +109,7 @@ export default {
     const horse = {
       name: T('Il cavallo rosso', 'The red horse'),
       sprite: await ctx.art.load('/museo/opere/03-bruegel-cavallo.webp'),
-      height: 2.2, hp: 10, speed: 2.6, dmg: 22, reach: 1.8, radius: 0.8, behavior: 'charge', boss: true,
+      height: 2.2, hp: 10, speed: 2.4, dmg: 13, reach: 1.8, attackEvery: 1.4, radius: 0.8, behavior: 'charge', boss: true,
       twitch: 0.5, rot: 0.3, tear: 0.5,
       zones: [{ name: 'costole', x: [-0.15, 0.25], y: [0.25, 0.6], mul: 2 }],
       parts: [{ type: 'strands', n: 10, len: 0.8, color: 0x2a1a10, at: [0.7, 1.4, -0.05], spread: 0.2 }],
@@ -142,10 +142,12 @@ export default {
       }
       return null;
     };
-    ctx.data.army = ctx.spawner({ kinds: [{ def: shield, w: 3 }, { def: skeleton, w: 2 }], first: 3, every: 1.5, max: 8, where });
-    // and the skeletons that run across the plain from everywhere
-    ctx.spawner({ kinds: [{ def: skeleton, w: 1 }], first: 1, every: 4, max: 3, where: 'around', min: 10, maxDist: 20 });
+    ctx.data.army = ctx.spawner({ kinds: [{ def: shield, w: 3 }, { def: skeleton, w: 2 }], first: 3, every: 2, max: 4, where });
+    // after the first bell, skeletons run across the plain from everywhere
+    ctx.data.runners = ctx.spawner({ kinds: [{ def: skeleton, w: 1 }], first: 0, every: 5, max: 2, where: 'around', min: 12, maxDist: 20 });
+    ctx.data.runners.stop();
 
+    for (const [cx, cy] of [[10, 17], [24, 3], [29, 12]]) ctx.pickup(ctx.map.toWorld(cx, cy), { kind: 'heal', amount: 35 });
     ctx.hud.goal(T('campane', 'bells'), 3);
     ctx.hud.bar('front', { label: T('fronte dei morti', 'front of the dead'), value: 0, color: '#e07030' });
   },
@@ -160,12 +162,34 @@ export default {
     ctx.fx.keepRed = 0.9;
     // behind the front: the dead take you
     if (gap < 0.6) {
-      p.hurt(28 * dt * ctx.D.dmg, null);
+      d.burnT = (d.burnT ?? 0) - dt;
+      if (d.burnT <= 0) { d.burnT = 0.45; p.hurt(13 * ctx.D.dmg, null); }
       d.hurtT -= dt;
       if (d.hurtT <= 0) { d.hurtT = 1.2; ctx.hud.whisper(T('sei dietro il fronte', 'you are behind the front')); ctx.audio.scream(0.5, 0.1); }
     }
     // the dead do not walk back past their own front
     for (const m of ctx.monsters.list) if (m.counts && m.pos.x > d.frontX + 2) m.pos.x = d.frontX + 2;
+  },
+
+  // the bell trees are thin: any shot that passes through the crown of a tree counts
+  onShot(ctx, shot) {
+    if (shot.monster && shot.monster.def.name.it === 'La campana') return;
+    const o = ctx.camera.position, dir = shot.point.clone().sub(o); const len = dir.length(); dir.divideScalar(len || 1);
+    for (const b of ctx.data.bells) {
+      if (b.dying) continue;
+      const hl = Math.hypot(dir.x, dir.z) || 1e-6, hx = dir.x / hl, hz = dir.z / hl;
+      const t = (b.pos.x - o.x) * hx + (b.pos.z - o.z) * hz;
+      if (t <= 0 || t > 45 || !ctx.map.los(o.x, o.z, b.pos.x - hx * 1.2, b.pos.z - hz * 1.2)) continue;
+      const px = o.x + hx * t, pz = o.z + hz * t, py = o.y + (dir.y / hl) * t;
+      if (Math.hypot(px - b.pos.x, pz - b.pos.z) < 1.3 && py > 0.3 && py < 6.2) {
+        const dmg = py > 3.6 ? 2 : 1;
+        b.hp -= dmg; b.flash = 1;
+        ctx.particles.burst({ x: px, y: py, z: pz }, 10, 0x6a5030, 2);
+        ctx.audio.toll(90 + Math.random() * 30);
+        if (b.hp <= 0) ctx.monsters.kill(b);
+        return false;
+      }
+    }
   },
 
   souvenir(g, { x, y, w, h, stats }) {
@@ -186,10 +210,11 @@ function toll(m, ctx, dt) {
     m.anger = 1;
     ctx.fx.flicker = 0.8; ctx.after(0.3, (c) => { c.fx.flicker = 0.35; });
     const d = ctx.data;
-    for (let i = 0; i < 2; i++) {
+    const near = m.pos.distanceTo(ctx.player.pos) < 30;
+    for (let i = 0; i < (near ? 1 : 0); i++) {
       const a = Math.random() * 6.28, r = 2.5 + Math.random() * 1.5;
       const pos = new ctx.THREE.Vector3(m.pos.x + Math.cos(a) * r, 0, m.pos.z + Math.sin(a) * r);
-      if (!ctx.map.solid(pos.x, pos.z) && ctx.monsters.list.length < 26) ctx.spawn(i ? d.defs.skeleton : d.defs.shield, pos);
+      if (!ctx.map.solid(pos.x, pos.z) && ctx.monsters.alive < 7) ctx.spawn(i ? d.defs.skeleton : d.defs.shield, pos);
     }
     if (m.pos.distanceTo(ctx.player.pos) < 18) ctx.hud.whisper({ it: 'la campana chiama', en: 'the bell is calling' });
   }
@@ -202,10 +227,12 @@ function bellDown(m, ctx) {
   ctx.audio.burst(1.4, 300, 0.5, 0.5, 'lowpass', 60);
   ctx.audio.toll(38);
   ctx.hud.goal({ it: 'campane', en: 'bells' }, 3 - d.silenced);
+  d.runners?.start();
+  ctx.pickup(m.pos.clone().add(new ctx.THREE.Vector3(-1.5, 0, 0)), { kind: 'heal', amount: 45 });
   if (d.silenced >= 3) { ctx.hud.say({ it: 'Silenzio. Per ora.', en: 'Silence. For now.' }, 2200); ctx.after(1.2, (c) => c.win()); return; }
   ctx.hud.say(d.silenced === 1 ? { it: 'Una campana tace. L’esercito arretra.', en: 'A bell falls silent. The army falls back.' } : { it: 'Due campane. Ora arriva il cavallo.', en: 'Two bells. Now the horse comes.' }, 2400);
   if (d.silenced === 2 && !d.horse) {
-    const pos = new ctx.THREE.Vector3(Math.min(d.frontX - 3, ctx.player.pos.x + 14), 0, ctx.player.pos.z);
+    const pos = new ctx.THREE.Vector3(Math.min(d.frontX - 3, ctx.player.pos.x + 22), 0, ctx.player.pos.z);
     if (!ctx.map.solid(pos.x, pos.z)) d.horse = ctx.spawn(d.defs.horse, pos);
   }
 }
