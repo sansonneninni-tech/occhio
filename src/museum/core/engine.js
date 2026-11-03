@@ -392,6 +392,24 @@ export function createEngine(canvas, hooks = {}) {
   }
 
   // ---------- player ----------
+  // Danno continuo (zone dps): ignora e non rinnova l'invulnerabilità, tonfo al massimo ogni 0.5 s.
+  let dotT = 0, dotAcc = 0;
+  function hurtDot(v) {
+    const p = ctx.player;
+    if (S.dead || S.done) return;
+    let dmg = v;
+    if (level?.onHurt) { const r = level.onHurt(ctx, dmg, null); if (typeof r === 'number') dmg = r; }
+    if (dmg <= 0) return;
+    p.hp -= dmg; dotAcc += dmg;
+    ctx.fx.hurt = Math.min(1, Math.max(ctx.fx.hurt || 0, 0.25));
+    if (S.time - dotT > 0.5 || S.time < dotT) {
+      dotT = S.time;
+      H('onEvent', 'hurt', { dmg: dotAcc, ang: null, dot: true });
+      audio.thud(); if (p.hp < 35) audio.heart();
+      dotAcc = 0; hud();
+    }
+    if (p.hp <= 0) die();
+  }
   function hurtPlayer(v, from) {
     const p = ctx.player;
     if (S.dead || S.done || p.invuln > 0) return;
@@ -501,7 +519,7 @@ export function createEngine(canvas, hooks = {}) {
     if (Math.abs(nz - (p.pos.z + p.vel.z * dt)) > 1e-4) p.vel.z *= 0.2;
     p.pos.x = nx; p.pos.z = nz;
     p.moving = clamp(Math.hypot(p.vel.x, p.vel.z) / Math.max(1, p.speed), 0, 1);
-    if (zone.dps) hurtPlayer(zone.dps * dt, null);
+    if (zone.dps) hurtDot(zone.dps * dt);
     p.invuln = Math.max(0, p.invuln - dt);
     // gun
     gun.cd = Math.max(0, gun.cd - dt);
