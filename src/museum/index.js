@@ -78,8 +78,8 @@ export default {
   title: { it: 'Il Museo Maledetto', en: 'The Cursed Museum' },
   tagline: { it: 'Di notte i soggetti escono dai quadri. Rimandali dentro, sala dopo sala. 40 opere, 40 incubi.', en: 'At night the subjects crawl out of the paintings. Send them back, hall after hall. 40 works, 40 nightmares.' },
   how: {
-    it: '40 livelli: ogni livello è una sala dedicata a un quadro inquietante (dal 1400 al 1900): i suoi soggetti sono diventati mostri, ognuno con poteri suoi.|Sparagli col pennello-cannone: quando muoiono tornano volando nella cornice vuota più vicina. Svuota la sala e il quadro è restaurato.|PC: clicca per bloccare il mouse, WASD per muoverti, mouse per guardare e sparare, E per la trementina (bomba), Esc pausa. Telefono: joystick a sinistra, trascina a destra per guardare, tasti FUOCO e BOMBA.|Ogni 5 livelli c’è un mostro enorme e si sblocca un punto di partenza. Arrivare al livello 25 è un’impresa. Il 40 è da bestia.',
-    en: '40 levels: each level is a hall devoted to an unsettling painting (1400s to 1900s): its subjects have become monsters, each with its own powers.|Shoot them with the brush-cannon: when they die they fly back into the nearest empty frame. Clear the hall and the painting is restored.|PC: click to lock the mouse, WASD to move, mouse to look and shoot, E for turpentine (bomb), Esc to pause. Phone: joystick on the left, drag on the right to look, FIRE and BOMB buttons.|Every 5 levels a huge monster waits and a new starting point unlocks. Reaching level 25 is a feat. Level 40 is hellish.',
+    it: '40 livelli: ogni livello è una sala dedicata a un quadro inquietante (dal 1400 al 1900): i suoi soggetti sono diventati mostri, ognuno con poteri suoi.|Sparagli con il revolver a olio, caricato con il colore della sala: quando muoiono tornano volando nella cornice vuota più vicina. Svuota la sala e il quadro è restaurato.|PC: clicca per bloccare il mouse, WASD per muoverti, mouse per guardare e sparare, R per ricaricare il revolver (6 colpi), E per la trementina (bomba), Esc pausa. Telefono: joystick a sinistra, trascina a destra per guardare, tasti FUOCO e BOMBA.|Ogni 5 livelli c’è un mostro enorme e si sblocca un punto di partenza. Arrivare al livello 25 è un’impresa. Il 40 è da bestia.',
+    en: '40 levels: each level is a hall devoted to an unsettling painting (1400s to 1900s): its subjects have become monsters, each with its own powers.|Shoot them with the oil revolver, loaded with the hall’s paint: when they die they fly back into the nearest empty frame. Clear the hall and the painting is restored.|PC: click to lock the mouse, WASD to move, mouse to look and shoot, R to reload the revolver (6 shots), E for turpentine (bomb), Esc to pause. Phone: joystick on the left, drag on the right to look, FIRE and BOMB buttons.|Every 5 levels a huge monster waits and a new starting point unlocks. Reaching level 25 is a feat. Level 40 is hellish.',
   },
   thumb: () => `<svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMid slice"><rect width="160" height="100" fill="#0b0807"/><path d="M0 100 L60 52 L100 52 L160 100Z" fill="#1a120c"/><path d="M0 0 L60 40 L100 40 L160 0Z" fill="#060403"/><rect x="60" y="40" width="40" height="12" fill="#2a1c14"/><rect x="66" y="42" width="28" height="8" fill="#c8a040"/><rect x="68" y="43" width="24" height="6" fill="#050303"/><circle cx="76" cy="46" r="1.6" fill="#ff2020"/><circle cx="84" cy="46" r="1.6" fill="#ff2020"/><rect x="18" y="20" width="22" height="30" fill="#c8a040" transform="skewY(18)"/><rect x="21" y="23" width="16" height="24" fill="#6a1a10" transform="skewY(18)"/><rect x="120" y="44" width="22" height="30" fill="#c8a040" transform="skewY(-18)"/><rect x="123" y="47" width="16" height="24" fill="#050303" transform="skewY(-18)"/></svg>`,
 
@@ -94,6 +94,11 @@ export default {
     const canvas = h('canvas', { class: 'mz-canvas' });
     const hpFill = h('i'), hpNum = h('b', {}, '100');
     const bombsEl = h('span', { class: 'mz-bombs' });
+    const ammoDots = h('span', { class: 'mz-ammo-dots' });
+    const ammoEl = h('button', { class: 'mz-ammo', type: 'button', 'aria-label': 'reload' }, h('small', {}, L({ it: 'colpi', en: 'shots' })), ammoDots, h('em', {}, coarseHint()));
+    const fxEl = h('div', { class: 'mz-fx' });
+    const hitArcs = h('div', { class: 'mz-arcs' });
+    const webEl = h('div', { class: 'mz-webfx', html: webSvg() }), stoneEl = h('div', { class: 'mz-stonefx' });
     const leftEl = h('b', {}, '0');
     const lvlNum = h('b', {}, '1'), lvlSub = h('span', {});
     const titleEl = h('div', { class: 'mz-level' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('div', {}, lvlNum, h('i', {}, '/40')), lvlSub);
@@ -116,9 +121,10 @@ export default {
       h('div', { class: 'mz-cross' }),
       whisper, plaque, banner,
       h('div', { class: 'mz-bl' }, h('div', { class: 'mz-hp' }, h('small', {}, L({ it: 'vita', en: 'life' })), h('div', { class: 'mz-bar' }, hpFill), hpNum), bombsEl),
+      ammoEl, fxEl, hitArcs,
       joy, fireBtn, bombBtn, pauseBtn);
     const layer = h('div', { class: 'mz-layer' });
-    const root = h('div', { class: 'mz' }, canvas, h('div', { class: 'mz-grain' }), hurtEl, hudEl, layer);
+    const root = h('div', { class: 'mz' }, canvas, h('div', { class: 'mz-grain' }), webEl, stoneEl, hurtEl, hudEl, layer);
     stage.replaceChildren(root);
     root.addEventListener('scroll', () => { root.scrollTop = 0; root.scrollLeft = 0; });
 
@@ -133,6 +139,12 @@ export default {
         hpNum.textContent = s.hp;
         hudEl.classList.toggle('is-low', s.hp < 30);
         bombsEl.textContent = '✚'.repeat(Math.min(6, s.bombs)) || '–';
+        if (s.ammo != null) {
+          ammoDots.replaceChildren(...Array.from({ length: s.max }, (_, k) => h('i', { class: k < s.ammo && !s.reloading ? 'is-full' : '' })));
+          ammoEl.classList.toggle('is-reloading', !!s.reloading);
+          ammoEl.classList.toggle('is-empty', !s.reloading && s.ammo === 0);
+        }
+        showFx(s);
         leftEl.textContent = s.left;
         if (s.boss != null) { bossEl.hidden = false; bossFill.style.transform = `scaleX(${s.boss})`; } else bossEl.hidden = true;
         root.style.setProperty('--gaze', s.gaze.toFixed(2));
@@ -142,8 +154,8 @@ export default {
         api.add(pts);
         if (boss) vibrate([60, 40, 120]);
       },
-      onEvent(kind) {
-        if (kind === 'hurt') { vibrate(30); hurtEl.animate?.([{ opacity: 0.9 }, { opacity: 0 }], { duration: 420, easing: 'ease-out' }); }
+      onEvent(kind, data) {
+        if (kind === 'hurt') { vibrate(30); hurtEl.animate?.([{ opacity: 0.9 }, { opacity: 0 }], { duration: 420, easing: 'ease-out' }); if (data?.ang != null) arc(data.ang); }
         if (kind === 'scream') vibrate([80, 30, 80]);
         if (kind === 'wake' && Math.random() < 0.25) say();
       },
@@ -161,13 +173,14 @@ export default {
     const pTimer = setInterval(() => {
       const S = E.S;
       let key = '';
-      if (run.playing && !S.paused && S.lookDist < 3.4) key = S.lookCell === 2 ? 'art' : S.lookCell === 3 ? 'empty' : '';
+      if (run.playing && !S.paused && S.lookDist < (S.lookCell >= 4 ? 5 : 3.4)) key = S.lookCell === 2 ? 'art' : S.lookCell === 3 ? 'empty' : S.lookCell >= 4 ? 'master' : '';
       if (key === plaqueKey) return;
       plaqueKey = key;
       const lv = LEVELS[run.idx];
       if (key === 'art') { plaqueA.textContent = L(lv.title); plaqueB.textContent = `${lv.artist} · ${lv.year}`; }
+      if (key === 'master') { plaqueA.textContent = L(lv.title); plaqueB.textContent = `${lv.artist} · ${lv.year} · ${L({ it: 'il capolavoro della sala', en: 'the masterpiece of the hall' })}`; }
       if (key === 'empty') { plaqueA.textContent = L({ it: 'Cornice vuota', en: 'Empty frame' }); plaqueB.textContent = L({ it: `qui c’era un ${L(lv.monster.name).toLowerCase()}: uccidilo e torna dentro`, en: `a ${L(lv.monster.name).toLowerCase()} escaped from here: kill it and it goes back in` }); }
-      plaque.classList.toggle('is-on', !!key);
+      plaque.classList.toggle('is-on', !!key); plaque.classList.toggle('is-master', key === 'master');
       plaque.classList.toggle('is-empty', key === 'empty');
     }, 150);
 
@@ -175,6 +188,44 @@ export default {
       banner.replaceChildren(...kids);
       banner.getAnimations?.().forEach((a) => a.cancel());
       banner.animate?.([{ opacity: 0, transform: 'translate(-50%, -40%) scale(.96)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.12 }, { opacity: 1, offset: 0.78 }, { opacity: 0, transform: 'translate(-50%, -56%)' }], { duration: ms, easing: 'ease-in-out', fill: 'forwards' });
+    }
+
+    // ---------- maluses: what is hurting you, how much, for how long ----------
+    function coarseHint() { return matchMedia('(pointer: coarse)').matches ? L({ it: 'tocca per ricaricare', en: 'tap to reload' }) : L({ it: 'R ricarica', en: 'R reload' }); }
+    function webSvg() {
+      let p = '';
+      for (const [cx, cy, sx, sy] of [[0, 0, 1, 1], [100, 0, -1, 1], [0, 100, 1, -1], [100, 100, -1, -1]]) {
+        for (let k = 0; k < 7; k++) { const a = (k / 6) * (Math.PI / 2); p += `M${cx} ${cy} L${cx + sx * Math.cos(a) * 42} ${cy + sy * Math.sin(a) * 42} `; }
+        for (let r = 8; r <= 40; r += 8) { p += `M${cx + sx * r} ${cy} `; for (let k = 1; k <= 6; k++) { const a = (k / 6) * (Math.PI / 2); p += `Q${cx + sx * Math.cos(a - 0.13) * r * 0.86} ${cy + sy * Math.sin(a - 0.13) * r * 0.86} ${cx + sx * Math.cos(a) * r} ${cy + sy * Math.sin(a) * r} `; } }
+      }
+      return `<svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="${p}" fill="none" stroke="rgba(240,240,232,.75)" stroke-width=".35" vector-effect="non-scaling-stroke"/></svg>`;
+    }
+    const FX = {
+      web: { name: { it: 'Ragnatela', en: 'Web' }, d: { it: 'sei invischiato: ti muovi a metà velocità', en: 'snared: you move at half speed' } },
+      gaze: { name: { it: 'Sguardo', en: 'Gaze' }, d: { it: 'ti pietrifica e ti toglie vita: non guardarlo', en: 'turns you to stone and drains you: look away' } },
+      scream: { name: { it: 'Urlo', en: 'Scream' }, d: { it: 'stordito: la vista si strappa', en: 'stunned: your sight tears' } },
+    };
+    const fxChips = {};
+    function chip(key, k) {
+      let c = fxChips[key];
+      if (!c) { const bar = h('i'); c = fxChips[key] = { el: h('div', { class: `mz-chip mz-chip--${key}` }, h('b', {}, L(FX[key].name)), h('span', {}, L(FX[key].d)), h('div', { class: 'mz-chip-bar' }, bar)), bar }; }
+      c.bar.style.transform = `scaleX(${Math.max(0, Math.min(1, k))})`;
+      return c.el;
+    }
+    function showFx(s) {
+      const list = [];
+      if (s.slowT > 0) list.push(chip('web', s.slowT / 2.5));
+      if (s.gaze > 0.06) list.push(chip('gaze', s.gaze));
+      if (s.screamT > 0) list.push(chip('scream', s.screamT / 1.3));
+      fxEl.replaceChildren(...list);
+      webEl.style.opacity = s.slowT > 0 ? Math.min(1, 0.35 + s.slowT / 2.5) : 0;
+      stoneEl.style.opacity = Math.min(1, s.gaze * 1.3);
+    }
+    function arc(ang) {
+      const a = h('i', { style: { transform: `rotate(${ang * 180 / Math.PI}deg)` } });
+      hitArcs.append(a);
+      a.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'ease-in' });
+      setTimeout(() => a.remove(), 900);
     }
 
     function say() {
@@ -259,6 +310,7 @@ export default {
       hudEl.hidden = false;
       const lv = LEVELS[run.idx];
       lvlNum.textContent = String(run.idx + 1);
+      root.style.setProperty('--mz-accent', lv.pal.accent);
       lvlSub.textContent = `${lv.artist} · ${L(lv.title)}`;
       showBanner([
         h('small', {}, L({ it: 'Livello', en: 'Level' })),
@@ -365,6 +417,7 @@ export default {
       const down = e.type === 'keydown';
       if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) { e.preventDefault(); down ? keys.add(e.code) : keys.delete(e.code); applyKeys(); }
       if (down && (e.code === 'KeyE' || e.code === 'KeyQ') && !e.repeat) { E.ctl.bomb = true; }
+      if (down && e.code === 'KeyR' && !e.repeat) E.ctl.reload = true;
       if (down && (e.code === 'Escape' || e.code === 'KeyP')) pause();
     };
     window.addEventListener('keydown', onKey);
@@ -390,7 +443,7 @@ export default {
     const touchState = { joy: null, look: null, fire: false, jx: 0, jy: 0, lx: 0 };
     root.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' || !run.playing || E.S.paused) return;
-      if (e.target.closest('.mz-btn, .mz-pause-btn, .mz-card')) return;
+      if (e.target.closest('.mz-btn, .mz-pause-btn, .mz-card, .mz-ammo')) return;
       if (!E.S.touch) { E.S.touch = true; root.classList.add('is-touch'); }
       const r = root.getBoundingClientRect();
       if (e.clientX - r.left < r.width * 0.45 && touchState.joy == null) {
@@ -418,6 +471,7 @@ export default {
     hold(fireBtn, () => { touchState.fire = true; E.ctl.fire = true; }, () => { touchState.fire = false; E.ctl.fire = keys.has('Space') || mouseFire; });
     bombBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); E.ctl.bomb = true; vibrate(40); });
     pauseBtn.addEventListener('click', () => pause());
+    ammoEl.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); E.ctl.reload = true; });
     root.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // test hooks for the double check

@@ -241,16 +241,6 @@ export function drawMonsterShape(g, mon, x, y, s, r = Math.random, pose = 0, fra
   g.restore();
 }
 
-// Monster sprite sheet: 3 frames (walk A, walk B, attack) of 96x96 RGBA arrays.
-export function monsterSprites(mon, idx) {
-  const S = 96;
-  return [0, 1, 2].map((f) => {
-    const c = cv(S, S), g = c.getContext('2d');
-    drawMonsterShape(g, mon, S / 2, S - 2, S * 0.92, rng(idx * 31 + 7), f === 2 ? 1 : 0.15, f === 1 ? 1 : 0);
-    return { w: S, h: S, data: new Uint32Array(g.getImageData(0, 0, S, S).data.buffer) };
-  });
-}
-
 function toTex(c) { return new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer); }
 
 // Wall textures: 0 plain panel (64px), 1 framed painting and 2 empty frame (128px, so the
@@ -290,11 +280,33 @@ export function wallTextures(level, idx) {
   frame(empty.g);
   empty.g.fillStyle = '#050303'; empty.g.fillRect(17, 15, 94, 68);
   empty.g.strokeStyle = 'rgba(200,0,0,.6)'; empty.g.lineWidth = 1.5; for (let i = 0; i < 9; i++) { empty.g.beginPath(); empty.g.moveTo(19 + r() * 90, 17 + r() * 64); empty.g.lineTo(19 + r() * 90, 17 + r() * 64); empty.g.stroke(); }
-  return [{ T: 64, d: toTex(plain.c) }, { T: 128, d: toTex(framed.c) }, { T: 128, d: toTex(empty.c) }];
+  // the masterpiece: two cells wide, a heavy carved frame, red velvet drapes, a big plaque
+  const mp = cv(256, 128), mg = mp.getContext('2d');
+  for (const x of [0, 128]) mg.drawImage(base(128).c, x, 0);
+  const drape = (x, d) => { const gr = mg.createLinearGradient(x, 0, x + 34 * d, 0); gr.addColorStop(0, '#3a0408'); gr.addColorStop(0.5, '#9a1420'); gr.addColorStop(1, '#2a0206'); mg.fillStyle = gr; mg.beginPath(); mg.moveTo(x, 0); mg.lineTo(x + 40 * d, 0); mg.quadraticCurveTo(x + 22 * d, 60, x + 12 * d, 128); mg.lineTo(x, 128); mg.fill(); mg.fillStyle = '#d8a840'; mg.fillRect(x + (d > 0 ? 6 : -14), 58, 8, 4); };
+  drape(0, 1); drape(256, -1);
+  mg.fillStyle = '#2a1c06'; mg.fillRect(42, 2, 172, 112);
+  const fr = mg.createLinearGradient(42, 0, 214, 0); fr.addColorStop(0, '#8a6418'); fr.addColorStop(0.3, '#f0cc60'); fr.addColorStop(0.6, '#a87c20'); fr.addColorStop(1, '#e0b850');
+  mg.fillStyle = fr; mg.fillRect(45, 5, 166, 106);
+  mg.fillStyle = '#5a4010'; for (let i = 0; i < 20; i++) { mg.beginPath(); mg.arc(50 + i * 8.2, 8, 1.6, 0, TAU); mg.arc(50 + i * 8.2, 108, 1.6, 0, TAU); mg.fill(); }
+  mg.fillStyle = '#3a2808'; mg.fillRect(54, 13, 148, 90);
+  mg.drawImage(paintingArt(level, idx, 480, 360), 56, 15, 144, 86);
+  mg.fillStyle = 'rgba(0,0,0,.3)'; mg.fillRect(56, 15, 144, 86);
+  mg.fillStyle = '#2a1c08'; mg.fillRect(96, 113, 64, 13); mg.fillStyle = '#e0bc58'; mg.fillRect(97, 114, 62, 11);
+  mg.fillStyle = '#5a4010'; mg.fillRect(104, 117, 48, 1.5); mg.fillRect(110, 121, 36, 1.2);
+  const half = (x) => { const c = cv(128, 128); c.getContext('2d').drawImage(mp, x, 0, 128, 128, 0, 0, 128, 128); return { T: 128, d: toTex(c) }; };
+  return [{ T: 64, d: toTex(plain.c) }, { T: 128, d: toTex(framed.c) }, { T: 128, d: toTex(empty.c) }, half(0), half(128)];
 }
 
-export function floorTexture(level, idx) {
+export function floorTexture(level, idx, kind = 'parquet') {
   const T = 64, c = cv(T, T), g = c.getContext('2d'), r = rng(idx * 17 + 5);
+  if (kind === 'carpet') { // a worn red runner with a damask pattern
+    g.fillStyle = '#4a0c10'; g.fillRect(0, 0, T, T);
+    g.fillStyle = '#5e1418'; for (let y = 0; y < T; y += 16) for (let x = (y / 16) % 2 ? 8 : 0; x < T; x += 16) { g.beginPath(); g.moveTo(x + 4, y + 2); g.lineTo(x + 8, y + 8); g.lineTo(x + 4, y + 14); g.lineTo(x, y + 8); g.fill(); }
+    for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(0,0,0,${r() * 0.25})`; g.fillRect(r() * T, r() * T, 1, 1); }
+    for (let i = 0; i < 4; i++) { g.fillStyle = 'rgba(20,0,0,.35)'; g.beginPath(); g.arc(r() * T, r() * T, 2 + r() * 5, 0, TAU); g.fill(); }
+    return toTex(c);
+  }
   g.fillStyle = level.pal.floor; g.fillRect(0, 0, T, T);
   g.fillStyle = 'rgba(255,255,255,.04)'; g.fillRect(0, 0, 32, 32); g.fillRect(32, 32, 32, 32);
   g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 1; g.strokeRect(0.5, 0.5, 31, 31); g.strokeRect(32.5, 32.5, 31, 31);

@@ -1,12 +1,16 @@
 // The haunted museum: a small software raycaster (walls, floor, ceiling, billboards)
 // plus monster AI for every ability listed in levels.js. Pure canvas, no WebGL.
 import { LEVELS, difficulty } from './levels.js';
-import { rng, monsterSprites, wallTextures, floorTexture } from './art.js';
+import { rng, wallTextures, floorTexture } from './art.js';
+import { monsterSprites } from './monsters.js';
+import { propSprites, PROP_INFO } from './props.js';
 import { store } from '../core/store.js';
 
 const MW = 32, MH = 32, T = 64, SPR = 96;
 const TAU = Math.PI * 2;
-const PLAYER_R = 0.24, PLAYER_SPEED = 3.5, FIRE_RATE = 7, BOMB_R = 3.4;
+const PLAYER_R = 0.24, PLAYER_SPEED = 3.5, BOMB_R = 3.4;
+// the oil revolver: six glass chambers of paint, one shot each, then reload
+const CHAMBERS = 6, SHOT_GAP = 0.24, SHOT_DMG = 2.6, RELOAD_T = 1.0;
 const MAX_MONSTERS = 70;
 
 const rgbOf = (hex) => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
@@ -43,6 +47,30 @@ function buildMap(idx, monsterBudget) {
     map[py * MW + px] = 1; map[py * MW + o.x + o.w - 3] = 1;
     map[(o.y + o.h - 3) * MW + px] = 1; map[(o.y + o.h - 3) * MW + o.x + o.w - 3] = 1;
   }
+  // the hall of the masterpiece: the biggest room after the entrance, its painting two cells wide on one wall
+  let master = null;
+  const cand = rooms.slice(1).sort((a, b) => b.w * b.h - a.w * a.h);
+  for (const o of cand) {
+    const segs = [];
+    for (let x = o.x; x < o.x + o.w - 1; x++) { segs.push({ cells: [[x, o.y - 1], [x + 1, o.y - 1]], n: [0, 1] }); segs.push({ cells: [[x, o.y + o.h], [x + 1, o.y + o.h]], n: [0, -1] }); }
+    for (let y = o.y; y < o.y + o.h - 1; y++) { segs.push({ cells: [[o.x - 1, y], [o.x - 1, y + 1]], n: [1, 0] }); segs.push({ cells: [[o.x + o.w, y], [o.x + o.w, y + 1]], n: [-1, 0] }); }
+    const ok = segs.filter((sg) => sg.cells.every(([x, y]) => x > 0 && y > 0 && x < MW - 1 && y < MH - 1 && map[y * MW + x] === 1 && !map[(y + sg.n[1]) * MW + x + sg.n[0]]));
+    if (!ok.length) continue;
+    // prefer the segment nearest the middle of its side
+    ok.sort((a, b) => Math.hypot(a.cells[0][0] + 0.5 - o.cx, a.cells[0][1] + 0.5 - o.cy) - Math.hypot(b.cells[0][0] + 0.5 - o.cx, b.cells[0][1] + 0.5 - o.cy));
+    master = { room: o, ...ok[0] };
+    break;
+  }
+  if (master) {
+    // texture slices run left to right as seen from inside the room
+    const [[ax, ay], [bx, by]] = master.cells, [nx, ny] = master.n;
+    const flip = (nx === 0 && ny === -1) || nx === 1; // faces whose world order is reversed for the viewer
+    map[ay * MW + ax] = flip ? 5 : 4; map[by * MW + bx] = flip ? 4 : 5;
+    master.fx = (ax + bx) / 2 + 0.5 + nx * 0.5; master.fy = (ay + by) / 2 + 0.5 + ny * 0.5;
+  }
+  // corridors get a carpet runner, rooms keep the parquet
+  const zone = new Uint8Array(MW * MH);
+  for (let i = 0; i < MW * MH; i++) if (!map[i]) { const x = i % MW, y = (i / MW) | 0; if (!rooms.some((o) => x >= o.x && x < o.x + o.w && y >= o.y && y < o.y + o.h)) zone[i] = 1; }
   // walls that face a floor cell can carry a frame
   const faces = [];
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
@@ -64,7 +92,30 @@ function buildMap(idx, monsterBudget) {
     frames.push(f); map[f.y * MW + f.x] = 3;
   }
   for (const f of faces) if (map[f.y * MW + f.x] === 1 && r() < 0.1) map[f.y * MW + f.x] = 2;
-  return { map, rooms, frames, rnd: r };
+  // furniture on floor cells fully surrounded by floor, so it never closes a passage
+  const props = [];
+  const free = (x, y) => { for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if (map[(y + j) * MW + x + i]) return false; return true; };
+  const far = (x, y, d) => props.every((p) => Math.abs(p.x - x - 0.5) + Math.abs(p.y - y - 0.5) >= d);
+  if (master) {
+    const o = master.room, [nx, ny] = master.n, px = -ny, py = nx;
+    for (const s of [-1, 1]) props.push({ kind: 'rope', x: master.fx + nx * 1.1 + px * s * 0.9, y: master.fy + ny * 1.1 + py * s * 0.9 });
+    const bx = master.fx + nx * 2.6, by = master.fy + ny * 2.6;
+    if (free(bx | 0, by | 0)) props.push({ kind: 'bench', x: bx, y: by });
+    for (const s of [-1, 1]) { const cx = master.fx + nx * 0.6 + px * s * 1.7, cy = master.fy + ny * 0.6 + py * s * 1.7; if (!map[(cy | 0) * MW + (cx | 0)]) props.push({ kind: 'candles', x: cx, y: cy }); }
+  }
+  rooms.forEach((o, k) => {
+    if (o === master?.room) return;
+    const cells = [];
+    for (let y = o.y + 1; y < o.y + o.h - 1; y++) for (let x = o.x + 1; x < o.x + o.w - 1; x++) if (free(x, y)) cells.push([x, y]);
+    const n = Math.min(cells.length, k === 0 ? 1 : 2 + Math.floor(r() * 2));
+    for (let i = 0; i < n * 4 && props.filter((p) => p.room === k).length < n; i++) {
+      const [x, y] = cells[Math.floor(r() * cells.length)];
+      if (!far(x, y, 2.5)) continue;
+      const kind = k === 0 ? 'candles' : ['bust', 'bench', 'candles', 'easel', 'bust', 'fallen'][Math.floor(r() * 6)];
+      props.push({ kind, x: x + 0.5, y: y + 0.5, room: k });
+    }
+  });
+  return { map, rooms, frames, rnd: r, master, zone, props };
 }
 
 function bfs(map, sx, sy) {
@@ -121,6 +172,21 @@ function makeAudio() {
       const g = ctx.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       s.connect(f).connect(g).connect(master); s.start(t0, Math.random() * 0.5); s.stop(t0 + dur + 0.05);
     },
+    // a black-powder shot: click, crack, low punch, a room tail
+    shot() {
+      if (!ok()) return;
+      const p = 0.92 + Math.random() * 0.16;
+      this.burst(0.025, 5200 * p, 0.7, 0.35, 'highpass');
+      this.burst(0.14, 1100 * p, 0.9, 0.55, 'bandpass', 380);
+      this.tone(160 * p, 0.18, 'sine', 0.55, 42);
+      this.tone(90 * p, 0.12, 'triangle', 0.25, 40);
+      this.burst(0.55, 900, 0.5, 0.12, 'lowpass', 140);
+    },
+    click(hi = 1) { if (!ok()) return; this.tone(2600 * hi, 0.025, 'square', 0.05); this.burst(0.02, 3800 * hi, 3, 0.08, 'bandpass'); },
+    glass(k = 0) { if (!ok()) return; this.tone(2100 + k * 260, 0.18, 'sine', 0.05); this.tone(3150 + k * 390, 0.12, 'sine', 0.03); },
+    splat() { if (!ok()) return; this.burst(0.16, 1400, 1.2, 0.3, 'lowpass', 220); this.tone(110, 0.1, 'sine', 0.18, 55); },
+    thud() { if (!ok()) return; this.burst(0.1, 700, 1, 0.15, 'lowpass', 200); },
+    heart() { if (!ok()) return; this.tone(62, 0.13, 'sine', 0.3, 44); setTimeout(() => this.tone(55, 0.16, 'sine', 0.22, 40), 170); },
     tone(freq, dur, type = 'sine', vol = 0.15, slideTo = 0) {
       if (!ok()) return;
       const t0 = ctx.currentTime;
@@ -140,15 +206,15 @@ export function createEngine(canvas, opts = {}) {
 
   const S = {
     idx: 0, level: null, diff: null, map: null, frames: [], rooms: [],
-    px: 2, py: 2, pa: 0, hp: 100, bombs: 2, alive: true,
-    mons: [], projs: [], parts: [], souls: [], pickups: [],
+    px: 2, py: 2, pa: 0, hp: 100, bombs: 2, alive: true, ammo: CHAMBERS, reloadT: 0, cyl: 0, hammer: 0, hitDir: [],
+    mons: [], projs: [], parts: [], souls: [], pickups: [], props: [], zone: new Uint8Array(MW * MH),
     tex: null, floorT: null, ceilT: null, sprites: null, pickupSpr: null,
     t: 0, fireT: 0, shots: 0, hits: 0, kills: 0, total: 0, levelTime: 0,
     slowT: 0, gazeK: 0, screamT: 0, hurtT: 0, flashT: 0, recoil: 0, bob: 0, flicker: 0,
     flow: null, flowCell: -1, boss: null, done: false, paused: true, touch: false,
     fogRGB: [0, 0, 0], ceilRGB: [0, 0, 0], accent: [255, 80, 20], fogK: 0.05,
   };
-  const ctl = { fwd: 0, strafe: 0, turn: 0, fire: false, bomb: false, look: 0 };
+  const ctl = { fwd: 0, strafe: 0, turn: 0, fire: false, bomb: false, reload: false, look: 0 };
   const cb = { onKill: opts.onKill || (() => {}), onClear: opts.onClear || (() => {}), onDeath: opts.onDeath || (() => {}), onHud: opts.onHud || (() => {}), onEvent: opts.onEvent || (() => {}) };
 
   function resize(w, h) {
@@ -170,8 +236,9 @@ export function createEngine(canvas, opts = {}) {
     const extraSpawns = (level.abilities.includes('split') ? diff.count : 0) + (level.abilities.includes('summon') ? 10 : 0);
     const gen = buildMap(idx, Math.min(60, diff.count + extraSpawns + (diff.boss ? 1 : 0)));
     Object.assign(S, {
-      idx, level, diff, map: gen.map, frames: gen.frames.map((f) => ({ ...f, filled: false })), rooms: gen.rooms,
-      hp: 100, bombs: 2, alive: true, mons: [], projs: [], parts: [], souls: [], pickups: [],
+      idx, level, diff, map: gen.map, frames: gen.frames.map((f) => ({ ...f, filled: false })), rooms: gen.rooms, master: gen.master, zone: gen.zone,
+      props: gen.props.map((p) => ({ ...p, ...PROP_INFO[p.kind] })),
+      hp: 100, bombs: 2, alive: true, ammo: CHAMBERS, reloadT: 0, cyl: 0, hammer: 0, hitDir: [], mons: [], projs: [], parts: [], souls: [], pickups: [],
       t: 0, fireT: 0, shots: 0, hits: 0, kills: 0, total: 0, levelTime: 0,
       slowT: 0, gazeK: 0, screamT: 0, hurtT: 0, flashT: 0, recoil: 0, flicker: 0,
       flowCell: -1, boss: null, done: false,
@@ -182,8 +249,10 @@ export function createEngine(canvas, opts = {}) {
     const gain = (arr, k) => arr.map((p) => 0xff000000 | (Math.min(255, (((p >> 16) & 255) * k) | 0) << 16) | (Math.min(255, (((p >> 8) & 255) * k) | 0) << 8) | Math.min(255, ((p & 255) * k) | 0));
     S.tex = wallTextures(level, idx).map((t) => ({ T: t.T, d: gain(t.d, 1.9) }));
     S.floorT = gain(floorTexture(level, idx), 1.8);
+    S.carpetT = gain(floorTexture(level, idx, 'carpet'), 1.8);
+    S.propSpr = propSprites(level);
     S.ceilT = S.floorT.map((p) => { const k = 0.55; const r = (((p & 255) * k + S.ceilRGB[0]) / 2) | 0, gg = ((((p >> 8) & 255) * k + S.ceilRGB[1]) / 2) | 0, b = ((((p >> 16) & 255) * k + S.ceilRGB[2]) / 2) | 0; return 0xff000000 | (b << 16) | (gg << 8) | r; });
-    S.sprites = monsterSprites(level.monster, idx);
+    S.sprites = monsterSprites(level.monster, idx, level.pal.accent);
     S.pickupSpr = pickupSprite();
     // player in the first room
     const start = gen.rooms[0];
@@ -204,6 +273,7 @@ export function createEngine(canvas, opts = {}) {
     if (diff.boss) {
       let far = cells[0];
       for (const c of cells) if (dist[c] > dist[far]) far = c;
+      if (gen.master) { const o = gen.master.room; far = o.cy * MW + o.cx; }
       const b = spawn((far % MW) + 0.5, ((far / MW) | 0) + 0.5, { boss: true });
       S.boss = b;
     }
@@ -249,6 +319,11 @@ export function createEngine(canvas, opts = {}) {
     if (!solid(nx + Math.sign(dx) * r, o.y - r) && !solid(nx + Math.sign(dx) * r, o.y + r)) o.x = nx;
     const ny = o.y + dy;
     if (!solid(o.x - r, ny + Math.sign(dy) * r) && !solid(o.x + r, ny + Math.sign(dy) * r)) o.y = ny;
+    for (const p of S.props) {
+      if (!p.r) continue;
+      const ex = o.x - p.x, ey = o.y - p.y, d = Math.hypot(ex, ey), min = p.r + r;
+      if (d < min && d > 1e-4) { const k = (min - d) / d, tx = o.x + ex * k, ty = o.y + ey * k; if (!solid(tx, ty)) { o.x = tx; o.y = ty; } }
+    }
   }
   function lineOfSight(ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
@@ -276,20 +351,22 @@ export function createEngine(canvas, opts = {}) {
   }
   function part(x, y, z, vx, vy, vz, life, col, size = 0.05, grav = 3) { if (S.parts.length < 400) S.parts.push({ x, y, z, vx, vy, vz, life, max: life, col, size, grav }); }
   function burst(x, y, z, n, col, spd = 2, size = 0.05) { for (let i = 0; i < n; i++) { const a = Math.random() * TAU, s = Math.random() * spd; part(x, y, z, Math.cos(a) * s, Math.sin(a) * s, Math.random() * spd, 0.4 + Math.random() * 0.6, col, size); } }
-  function hurt(dmg, kind = 'hit') {
+  function hurt(dmg, kind = 'hit', from = null) {
     if (!S.alive || S.done) return;
     S.hp -= dmg;
     if (kind !== 'gaze') {
       S.hurtT = Math.min(1, S.hurtT + 0.35 + dmg / 60);
       audio.burst(0.25, 120, 1, 0.35, 'lowpass');
-      cb.onEvent('hurt', { dmg, kind });
+      let ang = null;
+      if (from) { ang = Math.atan2(from.y - S.py, from.x - S.px) - S.pa; ang = Math.atan2(Math.sin(ang), Math.cos(ang)); }
+      cb.onEvent('hurt', { dmg, kind, ang });
     }
     if (S.hp <= 0) { S.hp = 0; S.alive = false; audio.tone(180, 1.6, 'sawtooth', 0.25, 30); hud(); cb.onDeath(stats()); return; }
     if (kind !== 'gaze') hud();
   }
   function stats() { return { idx: S.idx, hp: Math.max(0, S.hp), kills: S.kills, total: S.total, shots: S.shots, hits: S.hits, acc: S.shots ? S.hits / S.shots : 0, time: S.levelTime }; }
   function alive() { let n = 0; for (const m of S.mons) if (!m.dying) n++; return n; }
-  function hud() { cb.onHud({ hp: Math.max(0, Math.round(S.hp)), bombs: S.bombs, left: alive(), total: S.total, boss: S.boss && !S.boss.dying && S.boss.hp > 0 ? S.boss.hp / S.boss.maxHp : S.boss ? 0 : null, gaze: S.gazeK, slow: S.slowT > 0 }); }
+  function hud() { cb.onHud({ hp: Math.max(0, Math.round(S.hp)), bombs: S.bombs, ammo: S.ammo, max: CHAMBERS, reloading: S.reloadT > 0, slowT: Math.max(0, S.slowT), screamT: S.screamT, left: alive(), total: S.total, boss: S.boss && !S.boss.dying && S.boss.hp > 0 ? S.boss.hp / S.boss.maxHp : S.boss ? 0 : null, gaze: S.gazeK, slow: S.slowT > 0 }); }
 
   function killMonster(m) {
     if (m.dying) return;
@@ -317,9 +394,19 @@ export function createEngine(canvas, opts = {}) {
   }
 
   // -------- player actions --------
+  function reload() {
+    if (S.reloadT > 0 || S.ammo >= CHAMBERS) return;
+    S.reloadT = RELOAD_T;
+    audio.click(0.7);
+    for (let k = 0; k < CHAMBERS; k++) setTimeout(() => { if (S.reloadT > 0) audio.glass(k); }, 260 + k * 85);
+    setTimeout(() => audio.click(1.3), RELOAD_T * 1000 - 60);
+    hud();
+  }
   function fire() {
-    S.shots++; S.fireT = 1 / FIRE_RATE; S.recoil = 1; S.flashT = 0.06;
-    audio.burst(0.09, 1800, 0.8, 0.12, 'highpass');
+    if (S.reloadT > 0) return;
+    if (S.ammo <= 0) { S.fireT = 0.3; audio.click(0.5); reload(); return; }
+    S.ammo--; S.shots++; S.fireT = SHOT_GAP; S.recoil = 1; S.flashT = 0.07; S.hammer = 1; S.cyl += 1;
+    audio.shot();
     const dx = Math.cos(S.pa), dy = Math.sin(S.pa), lx = -dy, ly = dx;
     const wall = castRay(S.px, S.py, dx, dy).dist;
     let best = null, bd = wall;
@@ -329,18 +416,25 @@ export function createEngine(canvas, opts = {}) {
       const depth = rx * dx + ry * dy;
       if (depth <= 0.15 || depth >= bd) continue;
       const lat = Math.abs(rx * lx + ry * ly);
-      const rad = 0.3 * m.size * (S.touch ? 1.7 : 1.1) + 0.02 * depth;
+      const rad = 0.3 * m.size * (S.touch ? 1.7 : 1.15) + 0.02 * depth;
       if (lat < rad) { best = m; bd = depth; }
     }
+    const col = `rgb(${S.accent.join(',')})`;
+    // a streak of paint along the shot
+    for (let t = 0.6; t < Math.min(bd, 12); t += 0.45) part(S.px + dx * t, S.py + dy * t, 0.42, dx * 0.5, dy * 0.5, 0, 0.12, col, 0.025, 0);
     if (best) {
       S.hits++;
-      damage(best, 1);
-      burst(best.x - dx * 0.2, best.y - dy * 0.2, 0.45 * best.size + best.z, 5, `rgb(${S.accent.join(',')})`, 1.6, 0.04);
-      if (!best.dying) audio.tone(140, 0.08, 'square', 0.06, 90);
+      if (!best.boss) moveBody(best, dx * 0.12, dy * 0.12, 0.2 * Math.min(1.2, best.size));
+      damage(best, SHOT_DMG);
+      burst(best.x - dx * 0.2, best.y - dy * 0.2, 0.45 * best.size + best.z, 9, col, 1.8, 0.045);
+      audio.splat();
     } else {
       const hx = S.px + dx * (wall - 0.05), hy = S.py + dy * (wall - 0.05);
-      burst(hx, hy, 0.5, 4, `rgb(${S.accent.join(',')})`, 0.8, 0.03);
+      burst(hx, hy, 0.5, 6, col, 0.9, 0.035);
+      audio.thud();
     }
+    if (S.ammo === 0) setTimeout(() => reload(), 180);
+    hud();
   }
   function bomb() {
     if (S.bombs <= 0) return;
@@ -381,7 +475,9 @@ export function createEngine(canvas, opts = {}) {
       if (tgt != null) S.pa += tgt * Math.min(1, dt * 5);
     }
     // weapons
-    S.fireT -= dt; S.recoil = Math.max(0, S.recoil - dt * 8); S.flashT -= dt;
+    S.fireT -= dt; S.recoil = Math.max(0, S.recoil - dt * 7); S.flashT -= dt; S.hammer = Math.max(0, S.hammer - dt * 9);
+    if (S.reloadT > 0) { S.reloadT -= dt; if (S.reloadT <= 0) { S.reloadT = 0; S.ammo = CHAMBERS; hud(); } }
+    if (ctl.reload) { ctl.reload = false; reload(); }
     if (ctl.fire && S.fireT <= 0) fire();
     if (ctl.bomb) { ctl.bomb = false; bomb(); }
     S.hurtT = Math.max(0, S.hurtT - dt * 1.2);
@@ -439,7 +535,7 @@ export function createEngine(canvas, opts = {}) {
       if (m.ab.has('scream') && m.cd.scream <= 0 && m.los && m.dist < 8) {
         m.cd.scream = 7 - (S.idx / 39) * 2; m.atkAnim = 0.8;
         S.screamT = 1.3;
-        hurt(m.dmg * 0.45, 'scream');
+        hurt(m.dmg * 0.45, 'scream', m);
         const pk = 0.8 / (m.dist || 1);
         const pp = { x: S.px, y: S.py }; moveBody(pp, rx * pk, ry * pk, PLAYER_R); S.px = pp.x; S.py = pp.y;
         audio.burst(1.1, 700, 3, 0.3, 'bandpass', 2600); audio.tone(520, 1, 'sawtooth', 0.08, 900);
@@ -463,7 +559,7 @@ export function createEngine(canvas, opts = {}) {
         if (m.charge > 0) {
           m.charge -= dt;
           if (m.charge > 0.7) spd = 0; // winding up
-          else { spd = m.speed * 3.4; moveBody(m, m.chargeDir[0] * spd * dt, m.chargeDir[1] * spd * dt, 0.22 * m.size); if (m.dist < 0.7 + 0.25 * m.size && m.atkCd <= 0) { m.atkCd = 0.8; m.atkAnim = 0.3; hurt(m.dmg * 1.3, 'charge'); m.charge = 0; } continue; }
+          else { spd = m.speed * 3.4; moveBody(m, m.chargeDir[0] * spd * dt, m.chargeDir[1] * spd * dt, 0.22 * m.size); if (m.dist < 0.7 + 0.25 * m.size && m.atkCd <= 0) { m.atkCd = 0.8; m.atkAnim = 0.3; hurt(m.dmg * 1.3, 'charge', m); m.charge = 0; } continue; }
         } else if (m.cd.charge <= 0 && m.los && m.dist < 7 && m.dist > 2) {
           m.cd.charge = 3.5 - (S.idx / 39) * 1.2; m.charge = 1.2; m.chargeDir = [ux, uy]; m.atkAnim = 0.5;
           audio.tone(90, 0.5, 'sawtooth', 0.12, 220);
@@ -484,12 +580,14 @@ export function createEngine(canvas, opts = {}) {
       } else if (m.ab.has('melee') || m.child) {
         if (m.atkCd <= 0) {
           m.atkCd = 1.15 / S.diff.rate; m.atkAnim = 0.28;
-          hurt(m.dmg, 'melee');
+          hurt(m.dmg, 'melee', m);
           if (m.ab.has('devour')) { m.hp = Math.min(m.maxHp * 1.5, m.hp + m.maxHp * 0.3); m.maxHp = Math.max(m.maxHp, m.hp); m.size = Math.min(m.boss ? 2.2 : 1.6, m.size * 1.07); audio.burst(0.3, 200, 2, 0.15, 'lowpass'); }
         }
       }
     }
     S.gazeK += (gaze - S.gazeK) * Math.min(1, dt * 4);
+    S.beatT = (S.beatT || 0) - dt;
+    if (S.gazeK > 0.3 && S.beatT <= 0) { S.beatT = 1.1 - S.gazeK * 0.5; audio.heart(); }
     // separation
     const ms = S.mons;
     for (let i = 0; i < ms.length; i++) { const a = ms[i]; if (a.dying) continue; for (let j = i + 1; j < ms.length; j++) { const b = ms[j]; if (b.dying) continue; const ddx = b.x - a.x, ddy = b.y - a.y, d = Math.hypot(ddx, ddy), min = 0.2 * (a.size + b.size); if (d < min && d > 0.0001) { const push = (min - d) * 0.5 / d; moveBody(a, -ddx * push, -ddy * push, 0.18); moveBody(b, ddx * push, ddy * push, 0.18); } } }
@@ -498,7 +596,7 @@ export function createEngine(canvas, opts = {}) {
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (solid(p.x, p.y) || p.life <= 0) { p.dead = true; burst(p.x - p.vx * dt, p.y - p.vy * dt, p.z, 4, p.col, 0.8, 0.03); continue; }
       if (Math.hypot(p.x - S.px, p.y - S.py) < 0.32) {
-        p.dead = true; hurt(p.dmg, p.web ? 'web' : 'shot');
+        p.dead = true; hurt(p.dmg, p.web ? 'web' : 'shot', { x: p.x - p.vx, y: p.y - p.vy });
         if (p.web) S.slowT = 2.5;
       }
     }
@@ -560,7 +658,8 @@ export function createEngine(canvas, opts = {}) {
       for (let x = 0; x < W; x++) {
         const tx = ((wx * T) | 0) & (T - 1), ty = ((wy * T) | 0) & (T - 1);
         wx += stX; wy += stY;
-        let c = fT[ty * T + tx];
+        const zc = S.zone[((wy | 0) & (MH - 1)) * MW + ((wx | 0) & (MW - 1))];
+        let c = (zc ? S.carpetT : fT)[ty * T + tx];
         buf[yo + x] = 0xff000000 | ((((c >> 16) & 255) * f + fbb) >> 8 << 16) | ((((c >> 8) & 255) * f + fgg) >> 8 << 8) | (((c & 255) * f + frr) >> 8);
         if (yc >= 0) { c = cT[ty * T + tx]; buf[yc + x] = 0xff000000 | ((((c >> 16) & 255) * f + fbb) >> 8 << 16) | ((((c >> 8) & 255) * f + fgg) >> 8 << 8) | (((c & 255) * f + frr) >> 8); }
       }
@@ -576,9 +675,10 @@ export function createEngine(canvas, opts = {}) {
       const lh = proj / d;
       let y0 = Math.floor(horizon - lh / 2), y1 = Math.floor(horizon + lh / 2);
       if (x === W >> 1) { S.lookCell = hit.cell; S.lookDist = d; }
-      const tw = S.tex[clamp(hit.cell - 1, 0, 2)], tex = tw.d, TT = tw.T;
+      const tw = S.tex[clamp(hit.cell - 1, 0, S.tex.length - 1)], tex = tw.d, TT = tw.T;
       let tx = (hit.wx * TT) | 0;
-      if ((hit.side === 0 && hit.rdx > 0) || (hit.side === 1 && hit.rdy < 0)) tx = TT - tx - 1;
+      // flip so every wall reads left to right for the viewer (paintings are not mirrored)
+      if (!((hit.side === 0 && hit.rdx > 0) || (hit.side === 1 && hit.rdy < 0))) tx = TT - tx - 1;
       const shadeK = hit.side ? 0.72 : 1;
       const f = (fogAt(d) * shadeK * 256) | 0, nf = 256 - (fogAt(d) * 256 | 0);
       const frr = fr * nf, fgg = fg * nf, fbb = fb * nf;
@@ -598,6 +698,7 @@ export function createEngine(canvas, opts = {}) {
     for (const p of S.projs) { const [dp, lat] = view(p.x, p.y); if (dp > 0.1) items.push({ k: 2, o: p, dp, lat }); }
     for (const p of S.parts) { const [dp, lat] = view(p.x, p.y); if (dp > 0.1) items.push({ k: 3, o: p, dp, lat }); }
     for (const p of S.souls) { const [dp, lat] = view(p.x, p.y); if (dp > 0.1) items.push({ k: 4, o: p, dp, lat }); }
+    for (const p of S.props) { const [dp, lat] = view(p.x, p.y); if (dp > 0.1) items.push({ k: 5, o: p, dp, lat }); }
     items.sort((a, b) => b.dp - a.dp);
     for (const it of items) {
       const sxc = W / 2 + (proj * it.lat) / it.dp;
@@ -614,13 +715,18 @@ export function createEngine(canvas, opts = {}) {
         const ghost = m.ab.has('invisible') && m.dist > 2.6 && m.hitT <= 0 ? 1 : 0;
         const flash = m.hitT > 0 || m.dying;
         drawSprite(spr, sxc, top, sh, it.dp, fl, flash, ghost, m.charge > 0.7);
+      } else if (it.k === 5) {
+        const p = it.o, sh = (proj * p.size) / it.dp;
+        const bottom = horizon + proj * 0.5 / it.dp;
+        drawSprite(S.propSpr[p.kind], sxc, bottom - sh, sh, it.dp, p.lit ? 256 : Math.min(256, fl + 30), false, 0, false);
+        if (p.lit && Math.random() < 0.5) dot(sxc + (Math.random() - 0.5) * sh * 0.4, bottom - sh * 0.98, Math.max(1, sh * 0.03), 'rgba(255,190,90,1)', it.dp, 0.5, true);
       } else if (it.k === 1) {
         const sh = (proj * 0.28) / it.dp;
         const bottom = horizon + proj * (0.5 - 0.05 * Math.sin(it.o.t * 4) - 0.05) / it.dp;
         drawSprite(it.o.kind === 'bomb' ? S.pickupSpr : S.pickupSpr, sxc, bottom - sh, sh, it.dp, Math.min(256, fl + 80), false, 0, it.o.kind === 'bomb');
       } else {
         const p = it.o;
-        const r = (proj * (it.k === 2 ? 0.09 : it.k === 4 ? 0.12 : p.size)) / it.dp;
+        const r = (proj * (it.k === 2 ? (p.web ? 0.1 : 0.12) : it.k === 4 ? 0.12 : p.size)) / it.dp;
         const cy = horizon + proj * (0.5 - p.z) / it.dp;
         const col = it.k === 4 ? `rgb(${S.accent.join(',')})` : p.col;
         dot(sxc, cy, Math.max(0.6, r), col, it.dp, it.k === 3 ? clamp(p.life / p.max, 0, 1) : 1, it.k !== 3);
@@ -675,21 +781,61 @@ export function createEngine(canvas, opts = {}) {
       }
     }
   }
+  // The oil revolver, seen from behind the shooter's right hand: a gloved hand, a walnut grip,
+  // a brass frame, a cylinder of six glass vials full of the hall's paint, an octagonal barrel.
   function drawWeapon() {
     const W = RW, H = RH;
-    const u = Math.min(W * 1.1, H) / 165;
-    const bx = W / 2 + Math.sin(S.bob) * 6 * u + W * 0.12, by = H + Math.abs(Math.cos(S.bob)) * 5 * u + S.recoil * 10 * u;
-    g.save(); g.translate(bx, by); g.scale(u, u);
-    // arm and paint gun: a brass brush-cannon
-    g.fillStyle = '#2a1a14'; g.fillRect(14, -40, 30, 40);
-    g.fillStyle = '#4a2c1a'; g.beginPath(); g.moveTo(-6, -62); g.lineTo(26, -62); g.lineTo(34, 0); g.lineTo(-14, 0); g.closePath(); g.fill();
-    g.fillStyle = '#b08a3a'; g.fillRect(-2, -78, 22, 18);
-    g.fillStyle = '#d8b050'; g.fillRect(0, -78, 6, 18);
-    g.fillStyle = '#1a1010'; g.fillRect(2, -96, 16, 20);
+    const u = Math.min(W * 0.9, H) / 400;
+    const rel = S.reloadT > 0 ? Math.sin(Math.min(1, (RELOAD_T - S.reloadT) / RELOAD_T) * Math.PI) : 0;
+    const bx = W * 0.5 + 14 * u + Math.sin(S.bob) * 5 * u - rel * 30 * u;
+    const by = H + Math.abs(Math.cos(S.bob)) * 4 * u + S.recoil * 6 * u + rel * 40 * u;
     const ac = `rgb(${S.accent.join(',')})`;
-    g.fillStyle = ac; g.fillRect(3, -100, 14, 8);
-    g.fillRect(6, -92, 3, 6 + Math.sin(S.t * 3) * 2);
-    if (S.flashT > 0) { g.globalAlpha = 0.85; g.fillStyle = ac; g.beginPath(); g.arc(10, -108, 12 + Math.random() * 6, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(10, -108, 5, 0, TAU); g.fill(); g.globalAlpha = 1; }
+    g.save(); g.translate(bx, by); g.scale(u, u); g.rotate(-S.recoil * 0.18 - rel * 0.5);
+    const lin = (x0, y0, x1, y1, ...st) => { const gr = g.createLinearGradient(x0, y0, x1, y1); st.forEach((c, i) => gr.addColorStop(i / (st.length - 1), c)); return gr; };
+    const P = (c, ...p) => { g.fillStyle = c; g.beginPath(); g.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) g.lineTo(p[i], p[i + 1]); g.closePath(); g.fill(); };
+    // sleeve with a lace cuff
+    P(lin(-20, 0, 60, 0, '#2a0a0c', '#5a1418', '#1a0608'), -14, 10, 64, 10, 52, -38, -4, -44);
+    P('#e8e0cc', -6, -40, 54, -34, 50, -48, -2, -54);
+    g.fillStyle = '#c8bca4'; for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(i * 8, -50 + i * 0.8, 3.2, 0, Math.PI * 2); g.fill(); }
+    // walnut grip and the gloved hand around it
+    P(lin(0, -60, 40, -60, '#3a1e0c', '#6a3a1a', '#2a1408'), 6, -48, 40, -46, 46, -96, 16, -104);
+    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 1; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(12 + i * 6, -52); g.lineTo(18 + i * 5, -98); g.stroke(); }
+    P(lin(-6, -70, 50, -70, '#0e0a0a', '#2e2624', '#0a0606'), -6, -50, 50, -44, 54, -78, 40, -88, 4, -84);
+    g.strokeStyle = '#3e3430'; g.lineWidth = 1.2; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(2, -60 - i * 8); g.quadraticCurveTo(24, -56 - i * 8, 48, -60 - i * 7); g.stroke(); }
+    // brass frame with engraving
+    P(lin(0, -130, 60, -130, '#6a4a12', '#e0b850', '#8a6418'), 10, -98, 50, -92, 54, -132, 8, -136);
+    g.strokeStyle = 'rgba(80,50,10,.7)'; g.lineWidth = 0.8; g.beginPath(); g.arc(30, -114, 8, 0, Math.PI * 2); g.moveTo(22, -114); g.quadraticCurveTo(30, -104, 38, -114); g.stroke();
+    // trigger guard
+    g.strokeStyle = '#c89a38'; g.lineWidth = 3; g.beginPath(); g.arc(4, -104, 10, Math.PI * 0.4, Math.PI * 1.4); g.stroke();
+    // hammer: cocked back, it snaps forward when you shoot
+    const hk = 1 - S.hammer;
+    g.save(); g.translate(30, -136); g.rotate(-0.5 * hk);
+    P('#2a2a2e', -4, 0, 4, 0, 6, -14, 0, -22, -6, -14); g.restore();
+    // the cylinder: six vials of paint seen from behind, turning one step per shot
+    const cx = 31, cy = -152, R = 23;
+    g.fillStyle = lin(cx - R, cy, cx + R, cy, '#1a1a1e', '#5a5a62', '#141418'); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
+    const turn = (S.cyl % CHAMBERS) * (Math.PI * 2 / CHAMBERS) + S.hammer * (Math.PI / CHAMBERS);
+    for (let k = 0; k < CHAMBERS; k++) {
+      const a = turn + k * (Math.PI * 2 / CHAMBERS) - Math.PI / 2;
+      const vx = cx + Math.cos(a) * R * 0.6, vy = cy + Math.sin(a) * R * 0.6;
+      const full = S.reloadT > 0 ? k < Math.floor((1 - S.reloadT / RELOAD_T) * CHAMBERS) : k < S.ammo;
+      g.fillStyle = '#060606'; g.beginPath(); g.arc(vx, vy, 5, 0, Math.PI * 2); g.fill();
+      if (full) { g.fillStyle = ac; g.beginPath(); g.arc(vx, vy, 4, 0, Math.PI * 2); g.fill(); g.fillStyle = 'rgba(255,255,255,.7)'; g.beginPath(); g.arc(vx - 1.3, vy - 1.3, 1.2, 0, Math.PI * 2); g.fill(); }
+    }
+    g.fillStyle = '#8a8a92'; g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fill();
+    // octagonal barrel running into the hall, brass front sight
+    P(lin(16, -200, 46, -200, '#18181c', '#62626c', '#101014'), 19, -170, 43, -170, 38, -232, 24, -232);
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(30, -228, 2, 56);
+    g.fillStyle = '#c89a38'; g.fillRect(28, -240, 6, 8); g.fillRect(24, -172, 14, 4);
+    g.fillStyle = '#050505'; g.beginPath(); g.ellipse(31, -232, 5, 2.4, 0, 0, Math.PI * 2); g.fill();
+    // muzzle flash: a splash of the hall's paint with a white-hot core
+    if (S.flashT > 0) {
+      g.save(); g.translate(31, -246);
+      g.fillStyle = ac; g.globalAlpha = 0.9; g.beginPath();
+      for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, rr = i % 2 ? 5 : 12 + Math.random() * 7; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr * 0.8); }
+      g.closePath(); g.fill(); g.fillStyle = '#fff6d8'; g.beginPath(); g.arc(0, 0, 4, 0, Math.PI * 2); g.fill();
+      g.restore();
+    }
     g.restore();
   }
 
