@@ -191,16 +191,16 @@ export default {
         h('p', { class: 'mz-fine' }, L({ it: 'Riproduzioni di opere in pubblico dominio, salvo dove indicato. Immagini disturbanti.', en: 'Reproductions of public-domain works unless stated. Disturbing imagery.' })));
     }
 
-    function begin() {
+    function begin(i = 0) {
       run.levels = LEVELS.filter((l) => l.ready);
-      Object.assign(run, { lives: LIVES, idx: 0, crossed: [], over: false });
-      intro();
+      Object.assign(run, { lives: LIVES, idx: i, crossed: [], over: false });
+      return intro();
     }
     async function beginExample() {
       const ex = await loadExample();
       run.levels = [ex];
       Object.assign(run, { lives: LIVES, idx: 0, crossed: [], over: false });
-      intro();
+      return intro();
     }
 
     async function intro(retry = false) {
@@ -411,7 +411,7 @@ export default {
     // test hooks
     window.__museum = {
       engine: E, run,
-      async start(i = 0, example = false) { if (example) await beginExample(); else begin(); run.idx = i; await intro(); enter(); unlockPointer(); },
+      async start(i = 0, example = false) { if (example) await beginExample(i); else await begin(i); enter(); unlockPointer(); },
       killAll: () => E.killAll(), step: (n) => E.step(n), win: () => E.ctx?.win(),
       getState: () => ({ n: run.level?.n, lives: run.lives, playing: run.playing, hp: E.ctx?.player.hp, alive: E.ctx?.monsters.alive, kills: E.S.kills, done: E.S.done, dead: E.S.dead, frameMs: E.S.frameMs, over: run.over }),
     };
