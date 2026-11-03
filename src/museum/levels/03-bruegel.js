@@ -119,11 +119,12 @@ export default {
     const bellDef = {
       name: T('La campana', 'The bell'),
       sprite: await ctx.art.load('/museo/opere/03-bruegel-campane.webp'),
-      height: 6.5, hp: 12, fixed: true, counts: false, dmg: 0, reach: 0, radius: 0.9,
+      height: 6.5, hp: 12, fixed: true, hitbox: 'rect', counts: false, dmg: 0, reach: 0, radius: 0.9,
       behavior: toll, twitch: 0.1, rot: 0.2, tear: 0.15, breathe: 0.1, selfLit: 0.3,
       // the bells hang in the upper part of the tree: hit them there
       zones: [{ name: 'campana', x: [-0.5, 0.5], y: [0.62, 0.9], mul: 2 }, { name: 'tronco', x: [-0.5, 0.5], y: [0, 0.55], mul: 0.4 }],
       onDeath: bellDown,
+      onHit: (m, shot, c) => { c.audio.toll(90 + Math.random() * 30); return shot.dmg; },
       blood: 0x3a2a1a,
     };
     ctx.data = { front, frontX: (W - 3) * C, silenced: 0, defs: { shield, skeleton, horse }, hurtT: 0, horse: null };
@@ -169,27 +170,6 @@ export default {
     }
     // the dead do not walk back past their own front
     for (const m of ctx.monsters.list) if (m.counts && m.pos.x > d.frontX + 2) m.pos.x = d.frontX + 2;
-  },
-
-  // the bell trees are thin: any shot that passes through the crown of a tree counts
-  onShot(ctx, shot) {
-    if (shot.monster && shot.monster.def.name.it === 'La campana') return;
-    const o = ctx.camera.position, dir = shot.point.clone().sub(o); const len = dir.length(); dir.divideScalar(len || 1);
-    for (const b of ctx.data.bells) {
-      if (b.dying) continue;
-      const hl = Math.hypot(dir.x, dir.z) || 1e-6, hx = dir.x / hl, hz = dir.z / hl;
-      const t = (b.pos.x - o.x) * hx + (b.pos.z - o.z) * hz;
-      if (t <= 0 || t > 45 || !ctx.map.los(o.x, o.z, b.pos.x - hx * 1.2, b.pos.z - hz * 1.2)) continue;
-      const px = o.x + hx * t, pz = o.z + hz * t, py = o.y + (dir.y / hl) * t;
-      if (Math.hypot(px - b.pos.x, pz - b.pos.z) < 1.3 && py > 0.3 && py < 6.2) {
-        const dmg = py > 3.6 ? 2 : 1;
-        b.hp -= dmg; b.flash = 1;
-        ctx.particles.burst({ x: px, y: py, z: pz }, 10, 0x6a5030, 2);
-        ctx.audio.toll(90 + Math.random() * 30);
-        if (b.hp <= 0) ctx.monsters.kill(b);
-        return false;
-      }
-    }
   },
 
   souvenir(g, { x, y, w, h, stats }) {
