@@ -26,8 +26,8 @@ export default {
   credit: { it: 'Riproduzione: pubblico dominio', en: '…' },
   intro: { it: 'Atmosfera, 1-2 frasi', en: '…' },    // nella schermata d'ingresso
   rule: { it: 'La regola spiegata in 1-2 frasi', en: '…' },
-  ruleShort: { it: 'versione da 6 parole', en: '…' }, // banner a inizio livello
-  goal: { it: 'Obiettivo in una riga', en: '…' },
+  ruleShort: { it: 'versione da 6 parole', en: '…' }, // banner a inizio livello e pannello fisso sotto l'obiettivo
+  goal: { it: 'Obiettivo in una riga', en: '…' }, // sempre a schermo in alto a destra: dite COSA fare e QUANTO (es. «Abbatti 20 mostri», «Raggiungi la barca»)
   paint: '#6a0806',      // colore della vernice nel revolver
   accent: '#c83020',     // colore d'accento dell'HUD
   fx: { mono: 0.9, … },  // filtro schermo di partenza (vedi "Filtro")
@@ -177,3 +177,9 @@ Revolver (`ctx.gun`): `dmg` (moltiplicatore), `chambers`, `reloadDur`, `gap`, `s
 `npm run dev`, poi `#/play/museo-maledetto`. Dalla console: `__museum.start(i)` entra nel livello i (0 = il primo pronto), `__museum.step(n)` avanza n frame, `__museum.killAll()`, `__museum.win()`, `__museum.getState()`. `__museum.engine.ctx` è il `ctx` del livello in corso.
 
 Prima di unire: il livello si vince e si perde, gira a 60 fps su PC e sopra 30 su telefono, i mostri compaiono entro 2 secondi, la regola si capisce dalla schermata d'ingresso, la scoperta incuriosisce.
+
+## Chiarezza (dopo la prova di ninni)
+
+- Il giocatore deve capire in 2 secondi cosa fare. `goal` e `ruleShort` restano sempre visibili in alto a destra; Tab (PC) o un tocco sul pannello (telefono) li ripete in grande.
+- Il contatore in alto a destra (`goalKills` o `ctx.hud.goal`) deve misurare proprio l'obiettivo scritto in `goal`. Se vincete con un'altra condizione, usate `ctx.hud.goal(etichetta, valore)` con un'etichetta concreta (es. «campane rimaste», «metri alla barca»).
+- La grana del filtro ora è fine e leggera per tutti: non serve abbassarla nei livelli. Evitate di alzare `grain`, `dust` e `scratches` sopra 0.7 per leggibilità.

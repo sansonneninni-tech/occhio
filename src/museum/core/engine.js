@@ -288,7 +288,7 @@ export function createEngine(canvas, hooks = {}) {
     H('onHud', {
       hp: Math.max(0, Math.round(p.hp)), maxHp: p.maxHp, ammo: gun.ammo, max: gun.chambers, reloading: gun.reloadT > 0,
       alive: ctx.monsters.alive, kills: S.kills,
-      goal: ctx._goal || (ctx._goalKills ? { label: ctx.t({ it: 'anime da rimandare', en: 'souls to send back' }), value: Math.max(0, ctx._goalKills - S.kills) } : null),
+      goal: ctx._goal || (ctx._goalKills ? { label: ctx.t({ it: 'mostri da abbattere', en: 'monsters left to kill' }), value: Math.max(0, ctx._goalKills - S.kills) } : null),
       boss: b && b.m && !b.m.dead ? { name: b.name, v: clamp(b.m.hp / b.m.maxHp, 0, 1) } : null,
       bars: Object.entries(ctx._bars).map(([id, v]) => ({ id, ...v })),
       rear: !!ctx.view.rear,

@@ -70,7 +70,12 @@ export default {
     const ammoEl = h('button', { class: 'mz-ammo', type: 'button', 'aria-label': 'reload' }, h('small', {}, L({ it: 'colpi', en: 'shots' })), ammoDots, h('em', {}, isCoarse ? L({ it: 'tocca per ricaricare', en: 'tap to reload' }) : L({ it: 'R ricarica', en: 'R reload' })));
     const livesEl = h('div', { class: 'mz-lives', 'aria-label': 'lives' });
     const goalLabel = h('small', {}), goalNum = h('b', {}, '');
-    const goalEl = h('div', { class: 'mz-tr' }, goalLabel, goalNum);
+    const objGoal = h('p', {}), objRule = h('p', {});
+    const objEl = h('button', { class: 'mz-obj', type: 'button', 'aria-label': 'objective' },
+      h('small', {}, L({ it: 'Obiettivo', en: 'Goal' })), objGoal,
+      h('small', { class: 'mz-obj-r' }, L({ it: 'Regola', en: 'Rule' })), objRule);
+    const goalCount = h('div', { class: 'mz-count' }, goalLabel, goalNum);
+    const goalEl = h('div', { class: 'mz-tr' }, goalCount, objEl);
     const lvlNum = h('b', {}, '1'), lvlSub = h('span', {});
     const titleEl = h('div', { class: 'mz-level' }, h('small', {}, L({ it: 'Livello', en: 'Level' })), h('div', {}, lvlNum, h('i', {}, '/15')), lvlSub);
     const bossName = h('small', {}), bossFill = h('i');
@@ -108,7 +113,7 @@ export default {
         ammoDots.replaceChildren(...Array.from({ length: s.max }, (_, k) => h('i', { class: k < s.ammo && !s.reloading ? 'is-full' : '' })));
         ammoEl.classList.toggle('is-reloading', !!s.reloading);
         ammoEl.classList.toggle('is-empty', !s.reloading && s.ammo === 0);
-        if (s.goal) { goalEl.hidden = false; goalLabel.textContent = s.goal.label; goalNum.textContent = s.goal.value; } else goalEl.hidden = true;
+        if (s.goal) { goalCount.hidden = false; goalLabel.textContent = s.goal.label; goalNum.textContent = s.goal.value; } else goalCount.hidden = true;
         if (s.boss) { bossEl.hidden = false; bossName.textContent = s.boss.name; bossFill.style.transform = `scaleX(${s.boss.v})`; } else bossEl.hidden = true;
         // the rear-view mirror takes the top centre strip: push boss and level bars below it
         const rr = root.getBoundingClientRect();
@@ -150,6 +155,19 @@ export default {
       banner.getAnimations?.().forEach((a) => a.cancel());
       banner.animate?.([{ opacity: 0, transform: 'translate(-50%, -40%) scale(.96)' }, { opacity: 1, transform: 'translate(-50%, -50%)', offset: 0.12 }, { opacity: 1, offset: 0.8 }, { opacity: 0, transform: 'translate(-50%, -56%)' }], { duration: ms, easing: 'ease-in-out', fill: 'forwards' });
     }
+    // big reminder of what to do: at the start, on Tab / tap on the objective panel
+    function showGoal(ms = 4200, withLevel = false) {
+      const lv = run.level; if (!lv) return;
+      showBanner([
+        withLevel ? h('small', {}, L({ it: 'Livello', en: 'Level' })) : null,
+        withLevel ? h('b', {}, String(lv.n)) : null,
+        withLevel ? h('span', {}, L(lv.title)) : null,
+        lv.goal ? h('strong', { class: 'mz-banner-goal' }, h('small', {}, L({ it: 'Obiettivo', en: 'Goal' })), L(lv.goal)) : null,
+        lv.rule ? h('em', {}, L(lv.ruleShort || lv.rule)) : null,
+      ], ms);
+      objEl.animate?.([{ boxShadow: '0 0 0 2px var(--mz-accent, #ff5a4a)' }, { boxShadow: '0 0 0 0 transparent' }], { duration: 1400 });
+    }
+    objEl.addEventListener('click', () => showGoal());
     function say(text) {
       const list = WHISPERS[lang()];
       whisper.textContent = text || list[Math.floor(Math.random() * list.length)];
@@ -227,9 +245,11 @@ export default {
           track(lv.n - 1),
           h('p', { class: 'mz-artist' }, `${lv.artist} · ${lv.year}${lv.museum ? ' · ' + L(lv.museum) : ''}`),
           h('h2', {}, L(lv.title)),
+          h('div', { class: 'mz-todo' },
+            lv.goal ? h('div', { class: 'mz-todo-goal' }, h('small', {}, L({ it: 'Per vincere', en: 'To win' })), h('p', {}, L(lv.goal))) : null,
+            lv.rule ? h('div', { class: 'mz-rule' }, h('small', {}, L({ it: 'La regola di questo quadro', en: 'The rule of this painting' })), h('p', {}, L(lv.rule))) : null,
+            h('p', { class: 'mz-keys' }, controlsLine(E.ctx._action))),
           lv.intro ? h('p', { class: 'mz-note' }, L(lv.intro)) : null,
-          lv.rule ? h('div', { class: 'mz-rule' }, h('small', {}, L({ it: 'La regola di questo quadro', en: 'The rule of this painting' })), h('p', {}, L(lv.rule))) : null,
-          lv.goal ? h('p', { class: 'mz-goal' }, L(lv.goal)) : null,
           h('div', { class: 'mz-lives-row' }, h('small', {}, retry ? L({ it: 'Ti restano', en: 'Lives left' }) : L({ it: 'Vite', en: 'Lives' })), livesEl.cloneNode(true)),
           h('div', { class: 'mz-row' },
             btn(retry ? L({ it: 'Rientra nel quadro', en: 'Enter the painting again' }) + ' →' : L({ it: `Entra nel livello ${lv.n}`, en: `Enter level ${lv.n}` }) + ' →', () => enter()))));
@@ -237,6 +257,11 @@ export default {
       layer.querySelector('.mz-lives-row .mz-lives')?.replaceWith(livesEl.cloneNode(true));
     }
 
+    function controlsLine(act) {
+      const a = act ? L(act.label) : null;
+      if (isCoarse) return L({ it: `Joystick a sinistra per muoverti, trascina a destra per guardare, FUOCO per sparare${a ? `, pulsante ${a} per l’azione` : ''}. Tocca l’obiettivo in alto per rileggerlo.`, en: `Left joystick to move, drag right to look, FIRE to shoot${a ? `, ${a} button for the action` : ''}. Tap the goal at the top to read it again.` });
+      return L({ it: `WASD muoversi · mouse guardare · clic sinistro sparare · R ricaricare${a ? ` · tasto destro o Spazio: ${a}` : ''} · Tab rilegge l’obiettivo`, en: `WASD move · mouse look · left click shoot · R reload${a ? ` · right click or Space: ${a}` : ''} · Tab shows the goal again` });
+    }
     function lockPointer() { if (isCoarse) return; try { const p = canvas.requestPointerLock?.(); p?.catch?.(() => {}); } catch {} }
     function unlockPointer() { try { document.exitPointerLock?.(); } catch {} }
 
@@ -248,7 +273,11 @@ export default {
       lvlSub.textContent = `${lv.artist} · ${L(lv.title)}`;
       root.style.setProperty('--mz-accent', lv.accent || '#ff5a4a');
       drawLives();
-      showBanner([h('small', {}, L({ it: 'Livello', en: 'Level' })), h('b', {}, String(lv.n)), h('span', {}, L(lv.title)), lv.rule ? h('em', {}, L(lv.ruleShort || lv.rule)) : null], 3600);
+      objGoal.textContent = lv.goal ? L(lv.goal) : '';
+      objRule.textContent = lv.ruleShort || lv.rule ? L(lv.ruleShort || lv.rule) : '';
+      objEl.querySelector('.mz-obj-r').hidden = objRule.hidden = !objRule.textContent;
+      objEl.hidden = !objGoal.textContent && !objRule.textContent;
+      showGoal(6500, true);
       E.audio.start(); E.audio.toll(98 - lv.n * 2);
       run.playing = true; whisperT = 10;
       E.setPaused(false);
@@ -358,6 +387,7 @@ export default {
       if (e.code === 'Space' || e.code === 'KeyF') { e.preventDefault(); if (!e.repeat) setAlt(down); }
       if (down && e.code === 'KeyR' && !e.repeat) I.reload = true;
       if (down && (e.code === 'Escape' || e.code === 'KeyP')) pause();
+      if (down && (e.code === 'Tab' || e.code === 'KeyH') && !e.repeat) { e.preventDefault(); if (run.playing) showGoal(); }
     };
     window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKey);
     const locked = () => document.pointerLockElement === canvas;
