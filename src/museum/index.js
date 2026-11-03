@@ -110,6 +110,9 @@ export default {
         ammoEl.classList.toggle('is-empty', !s.reloading && s.ammo === 0);
         if (s.goal) { goalEl.hidden = false; goalLabel.textContent = s.goal.label; goalNum.textContent = s.goal.value; } else goalEl.hidden = true;
         if (s.boss) { bossEl.hidden = false; bossName.textContent = s.boss.name; bossFill.style.transform = `scaleX(${s.boss.v})`; } else bossEl.hidden = true;
+        // the rear-view mirror takes the top centre strip: push boss and level bars below it
+        const rr = root.getBoundingClientRect();
+        hudEl.style.setProperty('--rear-off', s.rear ? `${Math.round(rr.height * 0.03 + rr.width * 0.34 / 3 + 6)}px` : '0px');
         barsEl.replaceChildren(...s.bars.map((b) => h('div', { class: 'mz-xbar', style: { '--c': b.color || '#e8dcc0' } }, h('small', {}, b.label || b.id), h('div', { class: 'mz-bar' }, h('i', { style: { transform: `scaleX(${Math.max(0, Math.min(1, b.value ?? 0))})` } })))));
       },
       onKill({ boss, n, score }) {

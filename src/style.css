@@ -438,7 +438,7 @@ a { color: inherit; }
 .mz-tr { position: absolute; right: 14px; top: 10px; text-align: right; display: flex; flex-direction: column; }
 .mz-tr small { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; }
 .mz-tr b { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: .9; color: #ff5a4a; text-shadow: 0 0 16px rgba(255, 40, 40, .55); font-variant-numeric: tabular-nums; }
-.mz-boss { position: absolute; left: 50%; top: 14px; width: min(46%, 380px); transform: translateX(-50%); text-align: center; }
+.mz-boss { position: absolute; left: 50%; top: calc(14px + var(--rear-off, 0px)); width: min(46%, 380px); transform: translateX(-50%); text-align: center; }
 .mz-boss[hidden] { display: none; }
 .mz-boss small::before { content: 'BOSS'; font-size: 10px; letter-spacing: .3em; color: #ff5a4a; }
 .mz-bar { height: 8px; border: 1px solid rgba(232, 220, 192, .5); background: rgba(0, 0, 0, .5); overflow: hidden; }
@@ -571,7 +571,7 @@ a { color: inherit; }
 .mz-lives-row small, .mz-rule small, .mz-discovery small { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #7d7058; }
 .mz-lives-row .mz-lives { margin: 0; }
 .mz-lives-row .mz-lives i { width: 16px; height: 24px; }
-.mz-bars { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); display: grid; gap: 6px; width: min(42%, 320px); }
+.mz-bars { position: absolute; left: 50%; top: calc(52px + var(--rear-off, 0px)); transform: translateX(-50%); display: grid; gap: 6px; width: min(42%, 320px); }
 .mz-xbar small { display: block; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .8; text-align: center; margin-bottom: 3px; }
 .mz-xbar .mz-bar i { background: var(--c); }
 .mz-rule { margin: 6px 0 14px; padding: 12px 14px; border: 1px solid #4a3424; border-left: 4px solid var(--mz-accent, #ff5a4a); background: #160c08; }
@@ -586,4 +586,4 @@ a { color: inherit; }
 .mz-act-hint[hidden] { display: none; }
 .mz-card--loading { width: auto; text-align: center; }
 .mz-tr[hidden] { display: none; }
-@media (max-width: 760px) { .mz-bars { top: 150px; left: 14px; transform: none; width: 46%; } .mz-xbar small { text-align: left; } .mz-act-hint { display: none; } }
+@media (max-width: 760px) { .mz-bars { top: calc(150px + var(--rear-off, 0px)); left: 14px; transform: none; width: 46%; } .mz-xbar small { text-align: left; } .mz-act-hint { display: none; } }
