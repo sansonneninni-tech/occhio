@@ -66,11 +66,40 @@ Legenda: ✓ rispettata · ✗ no · ~ in parte. **B** = bloccante fallita.
 | Temperatura Caldo/Freddo | ✓ | ~ | ~ | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ | ✓ | ~ | Scartata: troppo banale |
 | Mezzitoni (retino) | ~ | ✓ | ✓ | ✓ | ~ | ✓ | ✓ | ~ | ✓ | ✓ | ✓ | Rinviata alla prossima ondata |
 
-## 3. Giochi sviluppati (21)
+## 3. Prima versione scartata
 
-**Colore:** Furto di Tinta · Flash Cromatico · Vigile del Contrasto · Ruota dell'Armonia · Ponte di Sfumature · Inganno di Albers · Scala dei Valori · Detective Daltonico · Palette Estratta
-**Design:** Centro Ottico · Raggio Coerente · Proporzione Perfetta · Pixel Perfetto · Curva Gemella · Cecchino di Font
-**3D:** Indovina il Materiale · Da Dove Viene la Luce · Rotazione Mentale · Punto di Fuga
-**Arte:** Taglio d'Oro · Ricalco
+I primi 21 giochi erano test di percezione (indovina il colore, la proporzione...). Giudizio: "poco creativi, da prima media". Sono stati tutti eliminati.
 
-Ogni gioco: 5–8 round, tempo che stringe, combo, punteggio 0–1000, rango S/A/B/C/D, record personale, classifica dei nomi su questo dispositivo, esportazione (palette HEX/CSS/ASE/JSON, PNG, SVG, card del punteggio).
+Nuova regola, sopra tutte le altre:
+
+- **R0. Il gameplay genera l'opera.** Ogni partita deve divertire e lasciare un'opera da scaricare (quadro, stampa, poster, vaso 3D, mandala...). Più giochi bene, più l'opera è bella.
+
+## 4. Giochi attuali (15 + il museo)
+
+| Gioco | Si gioca | Ti porti a casa |
+|---|---|---|
+| Raffica | cannone di vernice contro i Censori grigi | quadro PNG + palette |
+| Palette Wars | goccia stile agar.io che si mescola con ciò che mangia | mappa dipinta + palette |
+| Riso Press | timing sui registri di stampa, 4 livelli di colore | stampe riso |
+| Glitch Guardian | schiacci i bug che corrompono l'opera | glitch art |
+| Neon Bender | segui la scintilla lungo il tuo nome | insegna al neon PNG/SVG |
+| Pattern DJ | rhythm game a 4 tasti | piastrella SVG + pattern |
+| Tipo Tempesta | lettere che cadono | poster svizzero |
+| Torre Bauhaus | impila blocchi | poster della torre |
+| Prisma Runner | runner a 3 corsie | poster spettro + palette |
+| Light Painting | prendi le luci dalla profondità | lunga esposizione |
+| Tornio | modelli argilla 3D su ordinazione | OBJ + PNG |
+| Collage | tagli ritagli al volo | collage |
+| Writer Notturno | tag col tuo nome evitando la torcia | muro dipinto |
+| Caleido Blaster | difendi il centro, colpi a specchio x8 | mandala |
+| Inchiostro Vivo | pennello lungo un rotolo | rotolo dipinto |
+
+## 5. Il Museo Maledetto (il gioco grande)
+
+- Doom-like in un museo di notte: 40 sale, ognuna un quadro inquietante dal 1400 al 1900 (Bosch, Bruegel, Grünewald, Goya, Füssli, Böcklin, Munch, Ensor, Bacon...).
+- I soggetti del quadro sono usciti come mostri: aspetto e poteri cambiano per ogni opera (artigli, sciame, volo, carica, sputo, scissione, restauro, salto, sguardo, velatura, divora, evoca, urlo, ragnatela).
+- Colpito a morte, il mostro torna volando nella cornice vuota più vicina. Sala vuota = quadro restaurato (scaricabile).
+- Difficoltà crescente (numero, vita, velocità, danno, cadenza). Boss ogni 5 sale, e ogni 5 sale si sblocca un ingresso. Sala XXV è un'impresa, XL è brutale.
+- Regole applicate: R0 (galleria dei quadri restaurati), R4 (sangue, urla, sussurri, vibrazione), R5 (flow con curva di difficoltà), R7 (punti per anima, bonus vita e mira, classifica locale), R10 (joystick, trascinamento e tasti grandi su telefono).
+- Le opere nel gioco sono omaggi procedurali, non riproduzioni.
+- Doppio controllo: test automatici su tutte le 40 sale (caricamento, IA, abilità, completamento, morte, input da tastiera, mouse e touch, telefono verticale e orizzontale).
