@@ -143,7 +143,7 @@ export default {
     const [piegata, braccia, capelli, implora, strisciano, caronte, steso, steso2, rannicchiato, braccio, brunetto, poeti, ...teste] = await Promise.all(
       ['piegata', 'braccia', 'capelli', 'implora', 'strisciano', 'caronte', 'steso', 'steso2', 'rannicchiato', 'braccio', 'brunetto', 'poeti', 'testa1', 'testa2', 'testa3', 'testa4', 'testa5', 'testa6'].map(S));
     const ink = 0x141414;
-    const soul = (name, sprite, o = {}) => ({ name, sprite, height: 1.85, hp: 1.4, speed: 3.4, dmg: 6, reach: 1.15, radius: 0.32, behavior: 'chase', twitch: 0.8, rot: 0.25, tear: 0.6, selfLit: 0.4, blood: ink, attackEvery: 0.7, ...o });
+    const soul = (name, sprite, o = {}) => ({ name, sprite, height: 1.85, hp: 1.4, speed: 3.2, dmg: 5, reach: 1.15, radius: 0.32, behavior: 'chase', twitch: 0.8, rot: 0.25, tear: 0.6, selfLit: 0.4, blood: ink, attackEvery: 0.95, ...o });
     const SOULS = [
       soul(T('L’anima piegata', 'The bent soul'), piegata),
       soul(T('L’anima che urla', 'The screaming soul'), braccia, { height: 2.0, speed: 3.0 }),
@@ -221,7 +221,7 @@ export default {
     const at = (flag) => ctx.map.find(flag);
     const pick = (list, min = 6) => { const pp = ctx.player.pos; const ok = list.filter((q) => q.distanceTo(pp) > min); const l = ok.length ? ok : list; return l[Math.floor(Math.random() * l.length)]; };
     // the crowd pours from behind and from the water
-    const behind = () => { const pp = ctx.player.pos; const opts2 = at('spawn1').concat(ctx.map.freeAround(pp.x, pp.z, 7, 13, 4)); return pick(opts2, 6); };
+    const behind = () => { const pp = ctx.player.pos; const opts2 = at('spawn1').concat(ctx.map.freeAround(pp.x, pp.z, 8, 14, 4)); return pick(opts2, 8); };
     const charon = ctx.spawn(CHARON, ctx.map.toWorld(18, 11), { instant: true, data: {} });
     charon.data.home = charon.pos.clone();
 
@@ -229,7 +229,7 @@ export default {
       circle: 1, charonDead: false, gates1, gates2, burn: 0, grab: 0, crackMap: new Map(), cracks: [], heads: 0, poets: null, end: 0, still: 0,
       SOULS, SAND, BRUNETTO, HEADS, POETS, pick, at, charon,
     };
-    ctx.data.sp1 = ctx.spawner({ kinds: SOULS.map((d, i) => ({ def: d, w: i === 4 ? 1 : 3 })), first: 6, every: 0.9, burst: 2, max: 9, where: behind });
+    ctx.data.sp1 = ctx.spawner({ kinds: SOULS.map((d, i) => ({ def: d, w: i === 4 ? 1 : 3 })), first: 4, every: 1.0, burst: 2, max: 9, where: behind });
     ctx.hud.goal(T('abbatti Caronte', 'bring down Charon'), '☠');
     ctx.after(0.8, (c) => c.hud.say(T('Canto III · L’Acheronte. Caronte aspetta alla barca.', 'Canto III · The Acheron. Charon waits by the boat.'), 3000));
     ctx.pickup(ctx.map.toWorld(4, 10), { kind: 'heal', amount: 30 });
@@ -294,7 +294,7 @@ export default {
       if (exposed) {
         // the flakes catch on you when you stop
         d.burn = Math.min(1.4, d.burn + dt * (speed < 1.6 ? 0.9 : -0.35));
-        if (d.burn > 0.5) ctx.player.hurt((d.burn - 0.5) * 24 * dt);
+        if (d.burn > 0.5) { d.burnAcc = (d.burnAcc || 0) + (d.burn - 0.5) * 24 * dt; if (d.burnAcc > 4) { ctx.player.hurt(d.burnAcc); d.burnAcc = 0; ctx.hud.whisper(T('bruci', 'you burn')); } }
         if (Math.random() < dt * 30) ctx.particles.burst({ x: p.pos.x + (Math.random() - 0.5) * 3, y: 0.05, z: p.pos.z + (Math.random() - 0.5) * 3 }, 2, 0xfff0d0, 1, 0.4);
       } else d.burn = Math.max(0, d.burn - dt * 1.2);
       if (z === 'riparo' && d.burn <= 0) ctx.player.heal(dt * 2.5);

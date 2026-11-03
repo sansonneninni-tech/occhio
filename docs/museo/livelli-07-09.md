@@ -12,10 +12,10 @@ Riproduzione: Alte Nationalgalerie, Berlino. Pubblico dominio (Böcklin muore ne
 
 **Mostri.**
 - *I Velati*: copie della figura bianca della barca, ritagliate dal quadro, che stanno ferme e si avvicinano solo quando non guardi il loro riflesso.
-- *Gli annegati*: corpi gonfi e grigi che salgono dall'acqua e afferrano le caviglie (rallentano).
-- *I cipressi*: nel bosco i cipressi neri sono mostri alti, modelli 3D con la corteccia del quadro, che chiudono i sentieri.
+- *Le finestre delle tombe*: i buchi neri scavati nella roccia del quadro si staccano e volano verso di te, con occhi e denti. *La porta bianca* sputa da lontano.
+- *I cipressi*: dopo il cancello i cipressi del quadro diventano mostri alti sei metri che si muovono solo quando non li guardi.
 
-**Scoperta.** La bara sulla barca porta il tuo nome. La figura velata eri tu: alla fine sali sulla barca e il livello si chiude con l'inquadratura esatta del quadro.
+**Scoperta.** Uccisi 24 morti la bara tra i cipressi si apre: porta il tuo nickname. La figura velata eri tu, e il quadro scaricato a fine livello ha il tuo nome sulla bara.
 
 **Per incuriosire.** Böcklin dipinse l'isola cinque volte. La prima la chiese una vedova, Marie Berna, che volle aggiungere la bara e la figura. Rachmaninov compose un poema sinfonico guardando una riproduzione in bianco e nero. Freud, Lenin e Clemenceau ne avevano una copia in casa.
 
@@ -32,7 +32,7 @@ Riproduzioni: tavole xilografiche del canto III, XV e XXXII. Pubblico dominio (D
 
 **Mostri.** Anime ritagliate dalle tavole (figure incise contorte), Caronte come boss di metà livello, le teste nel ghiaccio con il morso.
 
-**Scoperta.** Al fondo del Cocito, sotto il ghiaccio, c'è un volto enorme che guarda in su: è l'inizio della tavola di Lucifero.
+**Scoperta.** In fondo al Cocito ti aspettano due figure in piedi, Dante e Virgilio ritagliati dalla tavola: ti guardano dall'alto come si guarda un dannato. La vista si abbassa fino al ghiaccio: la testa nel ghiaccio sei tu.
 
 **Per incuriosire.** Doré aveva 23 anni e pagò di tasca sua la prima edizione, perché nessun editore credeva in un libro così caro. Disegnava direttamente sul legno, e una squadra di incisori lo scavava. Le sue tavole sono il modo in cui ancora oggi immaginiamo l'Inferno.
 
@@ -46,21 +46,26 @@ Riproduzione: Musée du Louvre, Parigi. Pubblico dominio (Géricault muore nel 1
 
 **Mostri.**
 - *I naufraghi*: corpi magri ritagliati dal quadro, che strisciano sulle assi.
-- *Il padre*: il vecchio che tiene il figlio morto sulle ginocchia. Non attacca, ma chi gli passa vicino perde la ragione (lo schermo si capovolge).
-- *I corpi in mare*: braccia che si aggrappano al bordo e tirano giù la zattera da un lato.
+- *Il padre*: il vecchio che tiene il figlio morto sulle ginocchia. Pesa più di tutti e chi gli sta vicino perde la ragione: l'immagine si ribalta e ondeggia.
+- *Chi sventola il panno*: l'uomo in cima alla piramide di corpi, che lancia da lontano.
+- *Gli annegati*: risalgono dal mare aggrappandosi al bordo e tirano giù la zattera da quel lato.
 
-**Scoperta.** Sull'orizzonte c'è una nave piccolissima, l'Argus, come nel quadro. Per vincere devi sopravvivere fino a vederla e sparare il segnale nel momento giusto.
+Le travi si staccano una alla volta e la zattera si restringe.
+
+**Scoperta.** Dopo 22 naufraghi (e almeno 45 secondi) sull'orizzonte compare l'Argus, piccolissima come nel quadro. Per vincere devi tenere premuta l'azione SEGNALE per tre secondi mentre tutti ti assalgono: ogni colpo che prendi ti fa abbassare il braccio.
 
 **Per incuriosire.** Su 147 persone sulla zattera ne sopravvissero 15. Géricault intervistò due superstiti, fece costruire un modello della zattera e tenne pezzi di cadaveri dell'obitorio nello studio per studiarne il colore. Il quadro oggi si sta scurendo per il bitume che usò.
 
 ## Immagini
 
-Copie in `public/museo/` (o dove la base comune decide). Fonte: Wikimedia Commons, tramite copie su GitHub.
+Quadri in `public/museo/opere/NN-nome.jpg`, figure scontornate in `public/museo/opere/07/`, `08/`, `09/` (scontornate con BiRefNet, WebP con trasparenza). Fonte: Wikimedia Commons, tramite copie su GitHub.
 
 | File | Opera |
 |---|---|
-| `bocklin_III.jpg` | Böcklin, *Die Toteninsel* III, 1883, Alte Nationalgalerie |
-| `dore_inferno_gate.webp` | Doré, Inferno canto III, Caronte |
-| `dore_inferno_xv_sand.webp` | Doré, Inferno canto XV, il sabbione |
-| `dore_styx.jpg` | Doré, Inferno canto XXXII, il Cocito |
-| `gericault.jpg` | Géricault, *Le Radeau de la Méduse*, Louvre |
+| `07-bocklin.jpg` | Böcklin, *Die Toteninsel* III, 1883, Alte Nationalgalerie |
+| `08-dore.jpg` | Doré, Inferno canto III, Caronte |
+| `08/canto-xv.jpg` | Doré, Inferno canto XV, il sabbione |
+| `08/canto-xxxii.jpg` | Doré, Inferno canto XXXII, il Cocito (inciso da Héliodore Pisan) |
+| `09-gericault.jpg` | Géricault, *Le Radeau de la Méduse*, Louvre |
+
+Il riflesso dell'acqua (livelli 7 e 9) è in `src/museum/levels/_acqua.js`: una seconda camera specchiata che vede anche i mostri `onlyInMirror`, e `reflectShot` che fa rimbalzare i colpi sull'acqua.
