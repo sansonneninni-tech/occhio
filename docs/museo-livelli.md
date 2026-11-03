@@ -80,7 +80,7 @@ ctx.map.build({
 - Durante il gioco: `ctx.map.setSolid(cx, cy, false)` apre una cella (porte, sportelli, tende), `true` la richiude.
 - Utili: `ctx.map.find(ch o flag)` → posizioni mondo con `.cx .cy`; `ctx.map.toWorld(cx, cy)`; `ctx.map.cellAt(x, z)`; `ctx.map.zoneAt(x, z)`; `ctx.map.setZone(cx, cy, 'water')`; `ctx.map.los(ax, az, bx, bz)`; `ctx.map.freeAround(x, z, min, max, n)`.
 - Geometria libera: `ctx.add(mesh)` aggiunge qualunque oggetto Three.js (zattera, isola, pontile, scale). Gli ostacoli rotondi si aggiungono con `ctx.collider(x, z, r)`. Per uno spazio aperto usa una griglia di `.` circondata da spazi (vuoto pieno) e `ceiling: false`.
-- Zone già pronte: `ice`, `mud`, `water`, `blood` (`speed` moltiplica la velocità, `friction` 0..1 inerzia: bassa = scivola, `dps` danno al secondo). Le tue in `zones` del livello.
+- Zone già pronte: `ice`, `mud`, `water`, `blood` (`speed` moltiplica la velocità, `friction` 0..1 inerzia: bassa = scivola, `dps` danno al secondo: continuo, non blocca i colpi dei mostri, tonfo ogni mezzo secondo). Le tue in `zones` del livello.
 
 ## Texture dal quadro
 
