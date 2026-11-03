@@ -291,6 +291,7 @@ export function createEngine(canvas, hooks = {}) {
       goal: ctx._goal || (ctx._goalKills ? { label: ctx.t({ it: 'anime da rimandare', en: 'souls to send back' }), value: Math.max(0, ctx._goalKills - S.kills) } : null),
       boss: b && b.m && !b.m.dead ? { name: b.name, v: clamp(b.m.hp / b.m.maxHp, 0, 1) } : null,
       bars: Object.entries(ctx._bars).map(([id, v]) => ({ id, ...v })),
+      rear: !!ctx.view.rear,
     });
   }
 
