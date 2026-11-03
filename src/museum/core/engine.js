@@ -62,7 +62,15 @@ export function createEngine(canvas, hooks = {}) {
   }
 
   // ---------- level loading ----------
-  async function load(mod, n, opts = {}) {
+  // loads run one after the other: a second load waits for the first to finish, then replaces it,
+  // so two quick clicks never mix two levels in the same scene
+  let loading = Promise.resolve();
+  function load(mod, n, opts = {}) {
+    const p = loading.then(() => doLoad(mod, n, opts));
+    loading = p.catch((e) => console.error(e));
+    return p;
+  }
+  async function doLoad(mod, n, opts) {
     unload();
     level = mod;
     scene = new THREE.Scene();
@@ -283,6 +291,7 @@ export function createEngine(canvas, hooks = {}) {
       goal: ctx._goal || (ctx._goalKills ? { label: ctx.t({ it: 'anime da rimandare', en: 'souls to send back' }), value: Math.max(0, ctx._goalKills - S.kills) } : null),
       boss: b && b.m && !b.m.dead ? { name: b.name, v: clamp(b.m.hp / b.m.maxHp, 0, 1) } : null,
       bars: Object.entries(ctx._bars).map(([id, v]) => ({ id, ...v })),
+      rear: !!ctx.view.rear,
     });
   }
 

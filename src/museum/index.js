@@ -110,6 +110,9 @@ export default {
         ammoEl.classList.toggle('is-empty', !s.reloading && s.ammo === 0);
         if (s.goal) { goalEl.hidden = false; goalLabel.textContent = s.goal.label; goalNum.textContent = s.goal.value; } else goalEl.hidden = true;
         if (s.boss) { bossEl.hidden = false; bossName.textContent = s.boss.name; bossFill.style.transform = `scaleX(${s.boss.v})`; } else bossEl.hidden = true;
+        // the rear-view mirror takes the top centre strip: push boss and level bars below it
+        const rr = root.getBoundingClientRect();
+        hudEl.style.setProperty('--rear-off', s.rear ? `${Math.round(rr.height * 0.03 + rr.width * 0.34 / 3 + 6)}px` : '0px');
         barsEl.replaceChildren(...s.bars.map((b) => h('div', { class: 'mz-xbar', style: { '--c': b.color || '#e8dcc0' } }, h('small', {}, b.label || b.id), h('div', { class: 'mz-bar' }, h('i', { style: { transform: `scaleX(${Math.max(0, Math.min(1, b.value ?? 0))})` } })))));
       },
       onKill({ boss, n, score }) {
@@ -191,16 +194,16 @@ export default {
         h('p', { class: 'mz-fine' }, L({ it: 'Riproduzioni di opere in pubblico dominio, salvo dove indicato. Immagini disturbanti.', en: 'Reproductions of public-domain works unless stated. Disturbing imagery.' })));
     }
 
-    function begin() {
+    function begin(i = 0) {
       run.levels = LEVELS.filter((l) => l.ready);
-      Object.assign(run, { lives: LIVES, idx: 0, crossed: [], over: false });
-      intro();
+      Object.assign(run, { lives: LIVES, idx: i, crossed: [], over: false });
+      return intro();
     }
     async function beginExample() {
       const ex = await loadExample();
       run.levels = [ex];
       Object.assign(run, { lives: LIVES, idx: 0, crossed: [], over: false });
-      intro();
+      return intro();
     }
 
     async function intro(retry = false) {
@@ -411,7 +414,7 @@ export default {
     // test hooks
     window.__museum = {
       engine: E, run,
-      async start(i = 0, example = false) { if (example) await beginExample(); else begin(); run.idx = i; await intro(); enter(); unlockPointer(); },
+      async start(i = 0, example = false) { if (example) await beginExample(i); else await begin(i); enter(); unlockPointer(); },
       killAll: () => E.killAll(), step: (n) => E.step(n), win: () => E.ctx?.win(),
       getState: () => ({ n: run.level?.n, lives: run.lives, playing: run.playing, hp: E.ctx?.player.hp, alive: E.ctx?.monsters.alive, kills: E.S.kills, done: E.S.done, dead: E.S.dead, frameMs: E.S.frameMs, over: run.over }),
     };
