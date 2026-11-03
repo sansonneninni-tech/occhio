@@ -35,6 +35,7 @@ export const UI = {
   '3d': { it: '3D', en: '3D' },
   arte: { it: 'Arte', en: 'Art' },
   museo: { it: 'Museo', en: 'Museum' },
+  folle: { it: 'Folli', en: 'Wild' },
   mzKicker: { it: 'Il gioco grande · 15 quadri, 15 incubi', en: 'The big game · 15 paintings, 15 nightmares' },
   mzEnter: { it: 'Entra nel museo', en: 'Enter the museum' },
   mzHalls: { it: 'quadri attraversati', en: 'paintings crossed' },

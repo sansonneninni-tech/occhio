@@ -4,6 +4,7 @@ export const CATS = {
   '3d': { label: '3d', color: '#12C97A', ink: '#0E0E10' },
   arte: { label: 'arte', color: '#FFD400', ink: '#0E0E10' },
   museo: { label: 'museo', color: '#B3001B', ink: '#F3EFE6' },
+  folle: { label: 'folle', color: '#C6FF00', ink: '#0E0E10' },
 };
 
 import raffica from './raffica.js';
@@ -21,6 +22,10 @@ import collage from './collage.js';
 import graffiti from './graffiti.js';
 import kaleido from './kaleido.js';
 import inkScroll from './ink-scroll.js';
+import fluxus from './fluxus.js';
+import marmo from './marmo.js';
+import strappo from './strappo.js';
+import sospesa from './sospesa.js';
 import museum from '../museum/index.js';
 
 export const GAMES = [
@@ -28,6 +33,7 @@ export const GAMES = [
   neon, patternDj, typeStorm, bauhausTower,
   prismRunner, lightPainting, lathe,
   collage, graffiti, kaleido, inkScroll,
+  fluxus, marmo, strappo, sospesa,
 ];
 
 // The big one: shown as a hero above the grid, not counted among the mini games.
