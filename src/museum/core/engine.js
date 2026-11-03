@@ -62,7 +62,15 @@ export function createEngine(canvas, hooks = {}) {
   }
 
   // ---------- level loading ----------
-  async function load(mod, n, opts = {}) {
+  // loads run one after the other: a second load waits for the first to finish, then replaces it,
+  // so two quick clicks never mix two levels in the same scene
+  let loading = Promise.resolve();
+  function load(mod, n, opts = {}) {
+    const p = loading.then(() => doLoad(mod, n, opts));
+    loading = p.catch((e) => console.error(e));
+    return p;
+  }
+  async function doLoad(mod, n, opts) {
     unload();
     level = mod;
     scene = new THREE.Scene();
